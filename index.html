@@ -3,228 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moaz AI Pro - 2026</title>
+    <title>Moaz Deutsch Pro | 1% Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --primary: #10b981; --bg: #0b0f1a; --card: #161e2d; --text: #f8fafc; --blue: #3b82f6; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 90px; }
-        
-        /* Header */
-        .header { padding: 25px 20px; text-align: center; background: linear-gradient(to bottom, #10b98133, transparent); border-bottom: 1px solid #10b98133; }
-        .header h1 { font-size: 26px; margin: 0; color: var(--primary); font-weight: 900; }
-
-        .page { display: none; padding: 20px; animation: fadeIn 0.4s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Cards & Inputs */
-        .smart-card { background: var(--card); border-radius: 25px; padding: 20px; border: 1px solid #ffffff14; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
-        textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 18px; outline: none; height: 100px; resize: none; border-radius: 15px; padding: 15px; box-sizing: border-box; }
-        
-        /* Buttons */
-        .btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s; font-size: 16px; }
-        .btn:active { transform: scale(0.95); }
-        .btn-audio { background: var(--blue); margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .play-icon { background: var(--blue); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
-
-        /* Navigation Bar */
-        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(22, 30, 45, 0.95); backdrop-filter: blur(15px); border-radius: 20px; display: flex; justify-content: space-around; padding: 10px; border: 1px solid #ffffff14; z-index: 1000; }
-        .nav-btn { background: none; border: none; font-size: 26px; cursor: pointer; padding: 10px; border-radius: 15px; transition: 0.3s; filter: grayscale(1); }
-        .nav-btn.active { background: var(--primary); filter: grayscale(0); transform: translateY(-5px); }
-
-        /* Output & Images */
-        .ai-output { margin-top: 20px; padding: 15px; border-radius: 15px; background: #10b9811a; border-right: 4px solid var(--primary); display: none; }
-        .word-img { width: 100%; height: 200px; border-radius: 20px; object-fit: cover; margin-top: 15px; display: none; border: 2px solid var(--primary); }
-        
-        /* Library & Quiz */
-        .lib-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ffffff14; font-size: 18px; font-weight: bold; }
-        .quiz-option { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; font-weight: bold; color: white; text-align: center; font-size: 18px; transition: 0.2s; }
-        .quiz-option:active { background: var(--primary); }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #020617; color: white; }
+        .glass-ui { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; }
+        .nav-item { transition: 0.3s; filter: grayscale(1); }
+        .nav-item.active { filter: grayscale(0); transform: translateY(-8px); background: #10b981; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4); }
+        .hidden { display: none; }
     </style>
 </head>
-<body>
+<body class="pb-28">
 
-    <div class="header">
-        <h1>MOAZ DEUTSCH PRO</h1>
-        <p style="opacity: 0.7; font-size: 12px; margin: 5px 0 0 0;">ذكاء اصطناعي • قاموس • استماع • اختبارات</p>
+    <!-- العدادات العلوية (Stats) -->
+    <div class="p-6 flex justify-between items-center sticky top-0 bg-[#020617]/80 backdrop-blur-md z-50">
+        <div class="flex items-center gap-2 text-emerald-400 font-black italic text-2xl">MOAZ <span class="text-white">AI</span></div>
+        <div class="bg-white/10 px-4 py-2 rounded-full text-orange-500 font-bold border border-orange-500/30">🔥 7 أيام</div>
     </div>
 
-    <!-- 1. صفحة الذكاء الاصطناعي والإدخال -->
-    <div id="home" class="page active">
-        <div class="smart-card">
-            <h3 style="margin-top:0">🤖 المعالج الذكي (كلمة - ترجمة)</h3>
-            <textarea id="aiInput" placeholder="اكتب هنا.. مثال:&#10;Schule - مدرسة"></textarea>
-            <button class="btn" onclick="deepAnalysis()">تحليل وإضافة للقاموس 🚀</button>
-            
-            <div id="aiLoader" style="display:none; text-align:center; margin:15px; color:var(--primary);">جاري التحليل واستدعاء الصور...</div>
-            
-            <div id="aiOutput" class="ai-output"></div>
-            <img id="aiImg" class="word-img" src="">
-            
-            <!-- أزرار الاستماع ظهرت هنا -->
-            <div id="audioControls" style="display: none;">
-                <button class="btn btn-audio" onclick="speakCurrent(1)">🔊 استماع مرة واحدة</button>
-                <button class="btn btn-audio" style="background:#8b5cf6;" onclick="speakCurrent(3)">🔁 استماع مكرر (3 مرات)</button>
+    <div id="main-content" class="max-w-2xl mx-auto p-4">
+        
+        <!-- صفحة 1: الرئيسية (الاحصائيات) -->
+        <section id="page-home" class="page-content animate-fade-in">
+            <h2 class="text-3xl font-black mb-6">لوحة التحكم 📊</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass-ui p-6">
+                    <p class="text-gray-400 text-sm">الكلمات المحفوظة</p>
+                    <h3 id="wordCount" class="text-4xl font-bold">0</h3>
+                </div>
+                <div class="glass-ui p-6 border-l-4 border-blue-500">
+                    <p class="text-gray-400 text-sm">مستوى الذكاء</p>
+                    <h3 class="text-4xl font-bold">1%</h3>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <!-- صفحة 2: المعالج الذكي (إضافة وتحليل) -->
+        <section id="page-add" class="page-content hidden">
+            <h2 class="text-3xl font-black mb-6">المعالج الذكي 🤖</h2>
+            <div class="glass-ui p-6">
+                <textarea id="aiInput" class="w-full bg-white/5 p-4 rounded-2xl h-40 border border-white/10 outline-none focus:border-emerald-500 text-xl" placeholder="اكتب: الكلمة - الترجمة"></textarea>
+                <button onclick="processAI()" class="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl mt-4 text-lg">تحليل وحفظ بالذكاء الاصطناعي</button>
+            </div>
+            <div id="aiResult" class="mt-6 hidden glass-ui p-6 border-r-4 border-emerald-500">
+                <p id="aiText" class="text-lg italic"></p>
+                <img id="aiImg" class="w-full h-48 object-cover rounded-2xl mt-4 border-2 border-emerald-500/20" src="">
+            </div>
+        </section>
+
+        <!-- صفحة 3: مختبر الصوت (الاستماع) -->
+        <section id="page-audio" class="page-content hidden">
+            <h2 class="text-3xl font-black mb-6">مختبر الصوت 🎧</h2>
+            <div id="audioList" class="space-y-4">
+                <!-- الكلمات هنا -->
+            </div>
+        </section>
+
+        <!-- صفحة 4: الاختبار (الكويز) -->
+        <section id="page-quiz" class="page-content hidden text-center">
+            <h2 class="text-3xl font-black mb-6">تحدي الـ 1% 🏆</h2>
+            <div id="quizContainer" class="glass-ui p-8 min-h-[300px]">
+                <!-- كويز هنا -->
+            </div>
+        </section>
+
     </div>
 
-    <!-- 2. صفحة القاموس -->
-    <div id="library" class="page">
-        <h2 style="text-align: center;">📚 قاموسك الشخصي</h2>
-        <div class="smart-card" id="wordList">
-            <div style="text-align:center; opacity:0.5;">لا توجد كلمات، أضفها من المعالج الذكي!</div>
-        </div>
-    </div>
-
-    <!-- 3. صفحة الاختبارات (Quiz) -->
-    <div id="quiz" class="page">
-        <h2 style="text-align: center;">🏆 تحدي الذكاء</h2>
-        <div class="smart-card" id="quizContainer">
-            <div style="text-align:center; opacity:0.5;">أضف كلمات أولاً لتبدأ الاختبار!</div>
-        </div>
-    </div>
-
-    <!-- الشريط السفلي للتبديل -->
-    <div class="nav-bar">
-        <button class="nav-btn active" onclick="changePage('home', this)">🤖</button>
-        <button class="nav-btn" onclick="changePage('library', this)">📚</button>
-        <button class="nav-btn" onclick="changePage('quiz', this)" onclick="startQuiz()">🏆</button>
-    </div>
+    <!-- قائمة التنقل (Bottom Tabs) -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[35px] p-2 flex justify-around shadow-2xl">
+        <button onclick="showTab('home', this)" class="nav-item active p-4 rounded-2xl text-2xl">📊</button>
+        <button onclick="showTab('add', this)" class="nav-item p-4 rounded-2xl text-2xl">➕</button>
+        <button onclick="showTab('audio', this)" class="nav-item p-4 rounded-2xl text-2xl">🎧</button>
+        <button onclick="showTab('quiz', this)" class="nav-item p-4 rounded-2xl text-2xl">🏆</button>
+    </nav>
 
     <script>
-        // الذاكرة
-        let myDictionary = JSON.parse(localStorage.getItem('moaz_dict')) || [];
-        let currentGermanWord = "";
+        let myData = JSON.parse(localStorage.getItem('moaz_ultra_data')) || [];
 
-        // تهيئة القاموس عند فتح الموقع
-        window.onload = () => { renderLibrary(); }
-
-        // التبديل بين الصفحات
-        function changePage(pageId, btn) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            if(pageId === 'quiz') startQuiz();
+        function showTab(id, el) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            if(id === 'audio') renderAudio();
+            if(id === 'quiz') startQuiz();
+            updateStats();
         }
 
-        // نطق الكلمات (الاستماع)
+        function processAI() {
+            const input = document.getElementById('aiInput').value;
+            if(!input.includes('-')) return alert("اكتب الكلمة - الترجمة");
+            
+            let [de, ar] = input.split('-').map(s => s.trim());
+            // تصحيح ألماني ذكي (Capitalization)
+            de = de.charAt(0).toUpperCase() + de.slice(1);
+
+            const res = document.getElementById('aiResult');
+            res.classList.remove('hidden');
+            document.getElementById('aiText').innerHTML = `تم تحليل الكلمة: <b class="text-emerald-400">${de}</b><br>المعنى المكتشف: ${ar}`;
+            document.getElementById('aiImg').src = `https://picsum.photos/seed/${de}/600/400`;
+            
+            myData.push({de, ar, id: Date.now()});
+            localStorage.setItem('moaz_ultra_data', JSON.stringify(myData));
+            document.getElementById('aiInput').value = "";
+            speak(de, 1);
+        }
+
         function speak(text, times) {
             window.speechSynthesis.cancel();
             const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'de-DE'; // القاموس الألماني
-            msg.rate = 0.85; // بطيء شوية عشان الحفظ
-            for(let i=0; i<times; i++) {
-                window.speechSynthesis.speak(msg);
-            }
-        }
-        function speakCurrent(times) { if(currentGermanWord) speak(currentGermanWord, times); }
-
-        // التحليل الذكي
-        function deepAnalysis() {
-            const text = document.getElementById('aiInput').value;
-            if(!text.includes('-')) return alert("يرجى كتابة الكلمة وترجمتها هكذا: Auto - سيارة");
-
-            let [de, ar] = text.split('-').map(s => s.trim());
-            currentGermanWord = de;
-
-            const loader = document.getElementById('aiLoader');
-            const output = document.getElementById('aiOutput');
-            const img = document.getElementById('aiImg');
-            const audioCtrl = document.getElementById('audioControls');
-
-            loader.style.display = 'block';
-            output.style.display = 'none'; img.style.display = 'none'; audioCtrl.style.display = 'none';
-
-            setTimeout(() => {
-                loader.style.display = 'none';
-                
-                // عرض التحليل
-                output.style.display = 'block';
-                output.innerHTML = `<b>✨ تم الحفظ والتصحيح:</b><br><span style="font-size:24px; color:#10b981;">${de}</span><br>المعنى: ${ar}`;
-                
-                // جلب صورة تناسب الكلمة
-                img.src = `https://source.unsplash.com/800x500/?${encodeURIComponent(de)},education`; 
-                img.style.display = 'block';
-
-                // إظهار أزرار الاستماع
-                audioCtrl.style.display = 'block';
-
-                // الحفظ في القاموس
-                const newEntry = { de: de, ar: ar, id: Date.now() };
-                myDictionary.push(newEntry);
-                localStorage.setItem('moaz_dict', JSON.stringify(myDictionary));
-                renderLibrary();
-                
-                document.getElementById('aiInput').value = ""; // تفريغ الخانة
-            }, 1000);
+            msg.lang = 'de-DE';
+            msg.rate = 0.8;
+            for(let i=0; i<times; i++) window.speechSynthesis.speak(msg);
         }
 
-        // عرض القاموس
-        function renderLibrary() {
-            const list = document.getElementById('wordList');
-            if(myDictionary.length === 0) return;
-            
-            list.innerHTML = '';
-            myDictionary.forEach(word => {
-                const item = document.createElement('div');
-                item.className = 'lib-item';
-                item.innerHTML = `
-                    <div>
-                        <div style="color:var(--primary);">${word.de}</div>
-                        <div style="font-size:14px; opacity:0.7;">${word.ar}</div>
-                    </div>
-                    <button class="play-icon" onclick="speak('${word.de}', 1)">🔊</button>
-                `;
-                list.appendChild(item);
+        function renderAudio() {
+            const list = document.getElementById('audioList');
+            list.innerHTML = myData.length ? '' : '<p class="opacity-50 text-center">أضف كلمات أولاً!</p>';
+            myData.forEach(w => {
+                list.innerHTML += `
+                    <div class="glass-ui p-4 flex justify-between items-center">
+                        <div><p class="font-bold text-emerald-400 text-xl">${w.de}</p><p class="text-sm opacity-60">${w.ar}</p></div>
+                        <div class="flex gap-2">
+                            <button onclick="speak('${w.de}', 1)" class="bg-blue-500 p-3 rounded-xl">🔊</button>
+                            <button onclick="speak('${w.de}', 3)" class="bg-emerald-500 p-3 rounded-xl text-xs font-bold">🔁 3x</button>
+                        </div>
+                    </div>`;
             });
         }
 
-        // نظام الاختبارات الذكي
         function startQuiz() {
             const container = document.getElementById('quizContainer');
-            if(myDictionary.length < 2) {
-                container.innerHTML = `<div style="text-align:center; opacity:0.5;">تحتاج إلى كلمتين على الأقل في القاموس لبدء الاختبار.</div>`;
-                return;
-            }
-
-            // اختيار كلمة عشوائية
-            const correctWord = myDictionary[Math.floor(Math.random() * myDictionary.length)];
-            
-            // عمل اختيارات
-            let options = [correctWord.ar];
-            while(options.length < 3 && options.length < myDictionary.length) {
-                const randomOpt = myDictionary[Math.floor(Math.random() * myDictionary.length)].ar;
-                if(!options.includes(randomOpt)) options.push(randomOpt);
-            }
-            options.sort(() => Math.random() - 0.5); // لخبطة الاختيارات
-
-            // رسم الاختبار
-            container.innerHTML = `
-                <div style="text-align:center; margin-bottom:20px;">
-                    <p style="opacity:0.7;">ما معنى هذه الكلمة؟</p>
-                    <h1 style="font-size:40px; margin:10px 0; color:var(--primary);">${correctWord.de}</h1>
-                    <button class="play-icon" style="margin:0 auto;" onclick="speak('${correctWord.de}', 1)">🔊</button>
-                </div>
-            `;
-
-            options.forEach(opt => {
-                const btn = document.createElement('div');
-                btn.className = 'quiz-option';
-                btn.innerText = opt;
-                btn.onclick = () => {
-                    if(opt === correctWord.ar) {
-                        alert("✅ إجابة صحيحة يا وحش!");
-                        startQuiz(); // سؤال جديد
-                    } else {
-                        alert("❌ خطأ! حاول تاني.");
-                    }
-                };
-                container.appendChild(btn);
-            });
+            if(myData.length < 2) return container.innerHTML = "تحتاج لكلمتين للبدء";
+            const target = myData[Math.floor(Math.random() * myData.length)];
+            container.innerHTML = `<h2 class="text-4xl font-black mb-8">${target.de}</h2>
+                <div class="grid gap-4">
+                    ${myData.slice(0, 3).map(w => `<button onclick="check('${w.ar}','${target.ar}')" class="glass-ui p-4 font-bold hover:bg-emerald-500 transition-all">${w.ar}</button>`).join('')}
+                </div>`;
         }
+
+        function check(s, c) {
+            if(s === c) { alert("صح! ✅"); startQuiz(); } else alert("غلط! ❌");
+        }
+
+        function updateStats() { document.getElementById('wordCount').innerText = myData.length; }
+        updateStats();
     </script>
 </body>
 </html>
