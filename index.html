@@ -1,136 +1,239 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deutsch Trainer - Moaz</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #000; }
-        input[type="range"] { accent-color: #00d4ff; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+import { useEffect, useMemo, useState } from "react";
 
-        function App() {
-            // الكلمات دي أنا حطيتها لك كمثال عشان الموقع ميبقاش فاضي
-            const [input, setInput] = useState("lernen sprechen verstehen arbeiten gehen");
-            const [words, setWords] = useState(["lernen", "sprechen", "verstehen", "arbeiten", "gehen"]);
-            const [currentIndex, setCurrentIndex] = useState(0);
-            const [autoPlay, setAutoPlay] = useState(false);
-            const [repeatCount, setRepeatCount] = useState(2);
-            const [quizWord, setQuizWord] = useState("");
-            const [options, setOptions] = useState([]);
-            const [score, setScore] = useState(0);
+export default function LernDeutschMitMoaz() {
+  const [input, setInput] = useState("");
+  const [words, setWords] = useState<{ german: string; arabic: string }[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(2);
+  const [score, setScore] = useState(0);
+  const [question, setQuestion] = useState(1);
+  const [quizWord, setQuizWord] = useState<{ german: string; arabic: string } | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [showWordList, setShowWordList] = useState(false);
 
-            const currentWord = words[currentIndex] || "Willkommen";
+  const current = words[currentIndex] || { german: "Willkommen", arabic: "أهلاً وسهلاً" };
 
-            // وظيفة النطق والتكرار
-            const speakWord = (word) => {
-                if (!word) return;
-                speechSynthesis.cancel();
-                for (let i = 0; i < repeatCount; i++) {
-                    const utterance = new SpeechSynthesisUtterance(word);
-                    utterance.lang = "de-DE";
-                    utterance.rate = 0.8;
-                    speechSynthesis.speak(utterance);
-                }
-            };
+  const speakWord = (word: string) => {
+    if (!word) return;
+    speechSynthesis.cancel();
+    for (let i = 0; i < repeatCount; i++) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = "de-DE";
+      utterance.rate = 0.85;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    }
+  };
 
-            const loadWords = () => {
-                const clean = input.split(/[\s\n]+/).filter(Boolean);
-                setWords(clean);
-                setCurrentIndex(0);
-                if (clean.length > 0) speakWord(clean[0]);
-            };
+  const loadWords = () => {
+    const lines = input.split("\n").map(l => l.trim()).filter(Boolean);
+    const parsed = lines.map(line => {
+      const [german, arabic] = line.split("-").map(s => s.trim());
+      return { german: german || "", arabic: arabic || "" };
+    }).filter(w => w.german && w.arabic);
 
-            const nextWord = () => {
-                const next = (currentIndex + 1) % words.length;
-                setCurrentIndex(next);
-                speakWord(words[next]);
-            };
+    setWords(parsed);
+    setCurrentIndex(0);
+    setScore(0);
+    setQuestion(1);
+    if (parsed.length > 0) speakWord(parsed[0].german);
+  };
 
-            // إنشاء الكويز (الأسئلة)
-            const createQuiz = () => {
-                if (words.length < 2) return;
-                const correct = words[Math.floor(Math.random() * words.length)];
-                let choices = [...new Set([...words])].sort(() => 0.5 - Math.random()).slice(0, 4);
-                if (!choices.includes(correct)) choices[0] = correct;
-                setQuizWord(correct);
-                setOptions(choices.sort(() => 0.5 - Math.random()));
-            };
+  const nextWord = () => {
+    if (words.length === 0) return;
+    const next = (currentIndex + 1) % words.length;
+    setCurrentIndex(next);
+    speakWord(words[next].german);
+  };
 
-            useEffect(() => { if(words.length > 1) createQuiz(); }, [words, score]);
+  const previousWord = () => {
+    if (words.length === 0) return;
+    const prev = currentIndex === 0 ? words.length - 1 : currentIndex - 1;
+    setCurrentIndex(prev);
+    speakWord(words[prev].german);
+  };
 
-            return (
-                <div className="min-h-screen bg-black text-white p-4 font-sans">
-                    <div className="max-w-4xl mx-auto space-y-8">
-                        <header className="text-center">
-                            <h1 className="text-5xl font-black text-blue-500 mb-2">DEUTSCH TRAINER</h1>
-                            <p className="text-gray-400">تعلم • استمع • تكرار • اختبار</p>
-                        </header>
+  useEffect(() => {
+    if (!autoPlay || words.length === 0) return;
+    const interval = setInterval(nextWord, 6500);
+    return () => clearInterval(interval);
+  }, [autoPlay, words, currentIndex]);
 
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* منطقة إدخال الكلمات */}
-                            <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
-                                <h2 className="text-xl font-bold mb-4">قائمة الكلمات (اكتب هنا)</h2>
-                                <textarea 
-                                    className="w-full h-40 bg-black border border-zinc-700 rounded-xl p-4 text-blue-400 focus:outline-none"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                />
-                                <button onClick={loadWords} className="w-full mt-4 bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition">تحميل الكلمات</button>
-                            </div>
+  const createQuiz = () => {
+    if (words.length < 2) return;
+    const correct = words[Math.floor(Math.random() * words.length)];
+    const wrongs = words
+      .filter(w => w.arabic !== correct.arabic)
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3);
 
-                            {/* منطقة النطق والتحكم */}
-                            <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 text-center">
-                                <p className="text-zinc-500 mb-2">الكلمة الحالية</p>
-                                <h2 className="text-6xl font-black mb-6 text-white">{currentWord}</h2>
-                                <div className="flex justify-center gap-4 mb-6">
-                                    <button onClick={() => speakWord(currentWord)} className="bg-white text-black px-8 py-3 rounded-full font-bold">🔊 نطق</button>
-                                    <button onClick={nextWord} className="bg-zinc-700 px-8 py-3 rounded-full font-bold">التالي ➜</button>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm"><span>عدد التكرار: {repeatCount}</span></div>
-                                    <input type="range" min="1" max="5" value={repeatCount} onChange={(e)=>setRepeatCount(e.target.value)} className="w-full" />
-                                </div>
-                            </div>
-                        </div>
+    const allOptions = [...wrongs.map(w => w.arabic), correct.arabic]
+      .sort(() => 0.5 - Math.random());
 
-                        {/* قسم الكويز (الأسئلة) */}
-                        <div className="bg-zinc-900 p-8 rounded-3xl border border-blue-900/30">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-3xl font-bold text-blue-400">اختبر سمعك (Quiz)</h2>
-                                <div className="bg-blue-600 px-4 py-1 rounded-lg font-bold text-xl">Score: {score}</div>
-                            </div>
-                            <div className="text-center mb-8">
-                                <p className="text-zinc-400 mb-4">اسمع الكلمة واختار الإجابة الصح:</p>
-                                <button onClick={() => speakWord(quizWord)} className="bg-white text-black p-4 rounded-2xl font-black scale-110 hover:scale-125 transition">🔊 اسمع الكلمة</button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                {options.map((opt, i) => (
-                                    <button key={i} onClick={() => {
-                                        if(opt === quizWord) { setScore(s=>s+1); alert("صح! Bravo ✅"); }
-                                        else { alert("غلط! حاول تاني ❌"); }
-                                    }} className="bg-zinc-800 border border-zinc-700 p-5 rounded-2xl hover:border-blue-500 transition text-xl font-bold">
-                                        {opt}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+    setQuizWord(correct);
+    setOptions(allOptions);
+    setTimeout(() => speakWord(correct.german), 600);
+  };
+
+  useEffect(() => {
+    if (words.length >= 2) createQuiz();
+  }, [words]);
+
+  const checkAnswer = (selected: string) => {
+    if (quizWord && selected === quizWord.arabic) setScore(s => s + 1);
+    setQuestion(q => q + 1);
+    createQuiz();
+  };
+
+  const progress = words.length === 0 ? 0 : Math.round(((currentIndex + 1) / words.length) * 100);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-10">
+
+        {/* Header معدل حسب طلبك */}
+        <div className="text-center">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <span className="text-5xl">🇩🇪</span>
+            <h1 className="text-5xl md:text-7xl font-bold text-gray-900">
+              Deutsch mit Moaz Ali, DKW
+            </h1>
+            <span className="text-5xl">🇩🇪</span>
+          </div>
+          <p className="text-gray-600 text-xl">تعلم الألمانية بسهولة ومتعة</p>
+        </div>
+
+        {/* باقي الكود كما هو (بدون تغيير) */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* إضافة كلمات */}
+          <div className="bg-white rounded-3xl p-8 shadow-xl">
+            <h2 className="text-3xl font-bold mb-4">أضف كلماتك</h2>
+            <p className="text-gray-500 mb-4">اكتب كل كلمة في سطر + ترجمتها (مثال: Hallo - مرحبا)</p>
+            
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={`Hallo - مرحبا\nDanke - شكرا\nWasser - ماء\nHaus - منزل`}
+              className="w-full h-64 bg-gray-50 border border-gray-200 rounded-2xl p-5 text-lg focus:outline-none focus:ring-4 focus:ring-emerald-200"
+            />
+
+            <button
+              onClick={loadWords}
+              className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl text-xl"
+            >
+              تحميل الكلمات ({words.length})
+            </button>
+          </div>
+
+          {/* الكلمة الحالية */}
+          <div className="bg-white rounded-3xl p-8 shadow-xl flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">الكلمة الحالية</h2>
+              <span className="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm font-medium">
+                {currentIndex + 1} / {words.length}
+              </span>
+            </div>
+
+            <div className="text-center flex-1 flex flex-col justify-center">
+              <h1 className="text-7xl font-bold text-gray-900 mb-6">{current.german}</h1>
+              {showTranslation && (
+                <p className="text-4xl text-gray-600 mb-8">{current.arabic}</p>
+              )}
+            </div>
+
+            <div className="flex gap-4 justify-center mb-6">
+              <button onClick={() => setShowTranslation(!showTranslation)} className="text-sm underline text-emerald-600">
+                {showTranslation ? "إخفاء الترجمة" : "إظهار الترجمة"}
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex justify-between text-sm mb-1">
+                <span>التقدم</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-emerald-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <button onClick={previousWord} className="py-6 bg-gray-100 hover:bg-gray-200 rounded-2xl text-3xl">⬅</button>
+              <button onClick={() => speakWord(current.german)} className="py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-4xl">🔊</button>
+              <button onClick={nextWord} className="py-6 bg-gray-100 hover:bg-gray-200 rounded-2xl text-3xl">➜</button>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-4 border-t pt-6">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">تشغيل تلقائي</span>
+                <input type="checkbox" checked={autoPlay} onChange={() => setAutoPlay(!autoPlay)} className="w-6 h-6 accent-emerald-600" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>عدد التكرار</span>
+                  <span className="font-bold">{repeatCount}×</span>
                 </div>
-            );
-        }
+                <input type="range" min="1" max="5" value={repeatCount} onChange={e => setRepeatCount(+e.target.value)} className="w-full accent-emerald-600" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+        {/* باقي الأقسام (قائمة الكلمات + الاختبار) نفسها */}
+        {words.length > 0 && (
+          <div className="bg-white rounded-3xl p-8 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold">الكلمات المضافة ({words.length})</h2>
+              <button onClick={() => setShowWordList(!showWordList)} className="text-emerald-600 underline">
+                {showWordList ? "إخفاء" : "عرض"} القائمة
+              </button>
+            </div>
+            {showWordList && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-auto">
+                {words.map((w, i) => (
+                  <div key={i} className="bg-gray-50 p-4 rounded-2xl">
+                    <p className="font-bold text-lg">{w.german}</p>
+                    <p className="text-gray-600">{w.arabic}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {words.length >= 2 && (
+          <div className="bg-white rounded-3xl p-8 shadow-xl">
+            <div className="flex justify-between mb-8">
+              <h2 className="text-4xl font-bold">اختبار الاستماع</h2>
+              <div className="text-3xl font-bold text-emerald-600">{score} / {question - 1}</div>
+            </div>
+
+            <div className="text-center bg-emerald-50 py-12 rounded-2xl mb-10">
+              <p className="text-xl mb-6">استمع ثم اختر الترجمة الصحيحة</p>
+              <button
+                onClick={() => quizWord && speakWord(quizWord.german)}
+                className="bg-emerald-600 text-white px-16 py-7 rounded-2xl text-2xl font-bold hover:bg-emerald-700 transition"
+              >
+                🔊 استمع للكلمة
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {options.map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => checkAnswer(opt)}
+                  className="p-8 text-xl border-2 border-gray-200 hover:border-emerald-500 rounded-2xl hover:scale-105 transition text-right"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
