@@ -1,154 +1,986 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moaz Deutsch Pro | 1% Version</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-        body { font-family: 'Cairo', sans-serif; background: #020617; color: white; }
-        .glass-ui { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; }
-        .nav-item { transition: 0.3s; filter: grayscale(1); }
-        .nav-item.active { filter: grayscale(0); transform: translateY(-8px); background: #10b981; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4); }
-        .hidden { display: none; }
-    </style>
-</head>
-<body class="pb-28">
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  createContext,
+  useContext
+} from "react"
 
-    <!-- العدادات العلوية (Stats) -->
-    <div class="p-6 flex justify-between items-center sticky top-0 bg-[#020617]/80 backdrop-blur-md z-50">
-        <div class="flex items-center gap-2 text-emerald-400 font-black italic text-2xl">MOAZ <span class="text-white">AI</span></div>
-        <div class="bg-white/10 px-4 py-2 rounded-full text-orange-500 font-bold border border-orange-500/30">🔥 7 أيام</div>
+import {
+  Volume2,
+  Heart,
+  Trophy,
+  Check,
+  X,
+  PlayCircle
+} from "lucide-react"
+
+////////////////////////////////////////////////////////////////////////////////
+// 🧠 APP CONTEXT
+////////////////////////////////////////////////////////////////////////////////
+
+const AppContext = createContext()
+
+function AppProvider({ children }) {
+
+  const [hearts, setHearts] = useState(5)
+  const [xp, setXp] = useState(0)
+  const [progress, setProgress] = useState(10)
+
+  const loseHeart = () => {
+    setHearts(prev => Math.max(prev - 1, 0))
+  }
+
+  const gainXP = (amount = 10) => {
+    setXp(prev => prev + amount)
+  }
+
+  return (
+    <AppContext.Provider
+      value={{
+        hearts,
+        xp,
+        progress,
+        setProgress,
+        loseHeart,
+        gainXP
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🎤 SPEECH SYSTEM
+////////////////////////////////////////////////////////////////////////////////
+
+function speak(text, speed = 1) {
+
+  speechSynthesis.cancel()
+
+  const utterance =
+    new SpeechSynthesisUtterance(text)
+
+  utterance.lang = "de-DE"
+  utterance.rate = speed
+  utterance.pitch = 1
+
+  speechSynthesis.speak(utterance)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🧠 TYPO DETECTION
+////////////////////////////////////////////////////////////////////////////////
+
+function levenshteinDistance(a, b) {
+
+  const matrix = []
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i]
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+
+    for (let j = 1; j <= a.length; j++) {
+
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+
+        matrix[i][j] =
+          matrix[i - 1][j - 1]
+
+      } else {
+
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        )
+      }
+    }
+  }
+
+  return matrix[b.length][a.length]
+}
+
+function checkAnswer(userInput, correctAnswer) {
+
+  const normalize = (text) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " ")
+
+  const cleanUser = normalize(userInput)
+  const cleanCorrect = normalize(correctAnswer)
+
+  if (cleanUser === cleanCorrect) {
+    return {
+      correct: true,
+      typo: false
+    }
+  }
+
+  const distance =
+    levenshteinDistance(
+      cleanUser,
+      cleanCorrect
+    )
+
+  if (distance <= 2) {
+
+    return {
+      correct: true,
+      typo: true
+    }
+  }
+
+  return {
+    correct: false,
+    typo: false
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 📚 WORD DATABASE
+////////////////////////////////////////////////////////////////////////////////
+
+const WORDS = [
+
+  {
+    word: "der Apfel",
+    translation: "التفاحة",
+    literalTranslation: "الشيء التفاح",
+    sentence: "Ich esse einen Apfel.",
+    sentenceTranslation:
+      "أنا آكل تفاحة.",
+    category: "Essen",
+    emoji: "🍎"
+  },
+
+  {
+    word: "das Haus",
+    translation: "المنزل",
+    literalTranslation: "البيت",
+    sentence: "Das Haus ist groß.",
+    sentenceTranslation:
+      "البيت كبير.",
+    category: "Wohnen",
+    emoji: "🏠"
+  },
+
+  {
+    word: "die Schule",
+    translation: "المدرسة",
+    literalTranslation: "مكان الدراسة",
+    sentence:
+      "Die Schule ist neu.",
+    sentenceTranslation:
+      "المدرسة جديدة.",
+    category: "Bildung",
+    emoji: "🏫"
+  }
+
+]
+
+////////////////////////////////////////////////////////////////////////////////
+// 🎨 HEADER
+////////////////////////////////////////////////////////////////////////////////
+
+function Header() {
+
+  const {
+    hearts,
+    xp
+  } = useContext(AppContext)
+
+  return (
+
+    <div className="
+    w-full
+    bg-white
+    shadow-xl
+    rounded-3xl
+    p-5
+    flex
+    justify-between
+    items-center
+    mb-6
+    ">
+
+      <div>
+
+        <h1 className="
+        text-3xl
+        font-black
+        ">
+          🇩🇪 Moaz Ali Deutsch
+        </h1>
+
+        <p className="
+        text-gray-500
+        mt-1
+        ">
+          Learn German A1 Smartly
+        </p>
+
+      </div>
+
+      <div className="
+      flex
+      gap-4
+      items-center
+      ">
+
+        <div className="
+        flex
+        items-center
+        gap-2
+        bg-red-100
+        px-4
+        py-2
+        rounded-2xl
+        ">
+
+          <Heart
+            className="text-red-500"
+            fill="red"
+          />
+
+          <span className="font-bold">
+            {hearts}
+          </span>
+
+        </div>
+
+        <div className="
+        flex
+        items-center
+        gap-2
+        bg-yellow-100
+        px-4
+        py-2
+        rounded-2xl
+        ">
+
+          <Trophy
+            className="text-yellow-500"
+          />
+
+          <span className="font-bold">
+            {xp} XP
+          </span>
+
+        </div>
+
+      </div>
+
     </div>
+  )
+}
 
-    <div id="main-content" class="max-w-2xl mx-auto p-4">
-        
-        <!-- صفحة 1: الرئيسية (الاحصائيات) -->
-        <section id="page-home" class="page-content animate-fade-in">
-            <h2 class="text-3xl font-black mb-6">لوحة التحكم 📊</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass-ui p-6">
-                    <p class="text-gray-400 text-sm">الكلمات المحفوظة</p>
-                    <h3 id="wordCount" class="text-4xl font-bold">0</h3>
-                </div>
-                <div class="glass-ui p-6 border-l-4 border-blue-500">
-                    <p class="text-gray-400 text-sm">مستوى الذكاء</p>
-                    <h3 class="text-4xl font-bold">1%</h3>
-                </div>
-            </div>
-        </section>
+////////////////////////////////////////////////////////////////////////////////
+// 📊 PROGRESS PANEL
+////////////////////////////////////////////////////////////////////////////////
 
-        <!-- صفحة 2: المعالج الذكي (إضافة وتحليل) -->
-        <section id="page-add" class="page-content hidden">
-            <h2 class="text-3xl font-black mb-6">المعالج الذكي 🤖</h2>
-            <div class="glass-ui p-6">
-                <textarea id="aiInput" class="w-full bg-white/5 p-4 rounded-2xl h-40 border border-white/10 outline-none focus:border-emerald-500 text-xl" placeholder="اكتب: الكلمة - الترجمة"></textarea>
-                <button onclick="processAI()" class="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl mt-4 text-lg">تحليل وحفظ بالذكاء الاصطناعي</button>
-            </div>
-            <div id="aiResult" class="mt-6 hidden glass-ui p-6 border-r-4 border-emerald-500">
-                <p id="aiText" class="text-lg italic"></p>
-                <img id="aiImg" class="w-full h-48 object-cover rounded-2xl mt-4 border-2 border-emerald-500/20" src="">
-            </div>
-        </section>
+function ProgressPanel() {
 
-        <!-- صفحة 3: مختبر الصوت (الاستماع) -->
-        <section id="page-audio" class="page-content hidden">
-            <h2 class="text-3xl font-black mb-6">مختبر الصوت 🎧</h2>
-            <div id="audioList" class="space-y-4">
-                <!-- الكلمات هنا -->
-            </div>
-        </section>
+  const {
+    progress
+  } = useContext(AppContext)
 
-        <!-- صفحة 4: الاختبار (الكويز) -->
-        <section id="page-quiz" class="page-content hidden text-center">
-            <h2 class="text-3xl font-black mb-6">تحدي الـ 1% 🏆</h2>
-            <div id="quizContainer" class="glass-ui p-8 min-h-[300px]">
-                <!-- كويز هنا -->
-            </div>
-        </section>
+  return (
+
+    <div className="
+    bg-white
+    rounded-3xl
+    p-5
+    shadow-xl
+    mb-6
+    ">
+
+      <div className="
+      flex
+      justify-between
+      mb-3
+      ">
+
+        <h2 className="
+        font-bold
+        text-xl
+        ">
+          📈 Progress
+        </h2>
+
+        <span className="
+        font-bold
+        ">
+          {progress}%
+        </span>
+
+      </div>
+
+      <div className="
+      w-full
+      h-6
+      bg-gray-200
+      rounded-full
+      overflow-hidden
+      ">
+
+        <div
+          style={{
+            width: `${progress}%`
+          }}
+          className="
+          h-full
+          bg-green-500
+          transition-all
+          duration-500
+          "
+        />
+
+      </div>
 
     </div>
+  )
+}
 
-    <!-- قائمة التنقل (Bottom Tabs) -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[35px] p-2 flex justify-around shadow-2xl">
-        <button onclick="showTab('home', this)" class="nav-item active p-4 rounded-2xl text-2xl">📊</button>
-        <button onclick="showTab('add', this)" class="nav-item p-4 rounded-2xl text-2xl">➕</button>
-        <button onclick="showTab('audio', this)" class="nav-item p-4 rounded-2xl text-2xl">🎧</button>
-        <button onclick="showTab('quiz', this)" class="nav-item p-4 rounded-2xl text-2xl">🏆</button>
-    </nav>
+////////////////////////////////////////////////////////////////////////////////
+// 🔊 VOICE PLAYER
+////////////////////////////////////////////////////////////////////////////////
 
-    <script>
-        let myData = JSON.parse(localStorage.getItem('moaz_ultra_data')) || [];
+function VoicePlayer({
+  text
+}) {
 
-        function showTab(id, el) {
-            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
-            document.getElementById('page-' + id).classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            if(id === 'audio') renderAudio();
-            if(id === 'quiz') startQuiz();
-            updateStats();
+  const [speed, setSpeed] =
+    useState(1)
+
+  return (
+
+    <div className="
+    flex
+    gap-3
+    items-center
+    ">
+
+      <button
+        onClick={() => speak(text, speed)}
+        className="
+        bg-green-500
+        hover:bg-green-600
+        active:scale-95
+        transition
+        shadow-xl
+        rounded-2xl
+        p-4
+        "
+      >
+
+        <Volume2
+          className="
+          text-white
+          "
+        />
+
+      </button>
+
+      <select
+        value={speed}
+        onChange={(e) =>
+          setSpeed(Number(e.target.value))
         }
+        className="
+        border-2
+        rounded-xl
+        p-2
+        "
+      >
 
-        function processAI() {
-            const input = document.getElementById('aiInput').value;
-            if(!input.includes('-')) return alert("اكتب الكلمة - الترجمة");
-            
-            let [de, ar] = input.split('-').map(s => s.trim());
-            // تصحيح ألماني ذكي (Capitalization)
-            de = de.charAt(0).toUpperCase() + de.slice(1);
+        <option value={0.7}>
+          Slow
+        </option>
 
-            const res = document.getElementById('aiResult');
-            res.classList.remove('hidden');
-            document.getElementById('aiText').innerHTML = `تم تحليل الكلمة: <b class="text-emerald-400">${de}</b><br>المعنى المكتشف: ${ar}`;
-            document.getElementById('aiImg').src = `https://picsum.photos/seed/${de}/600/400`;
-            
-            myData.push({de, ar, id: Date.now()});
-            localStorage.setItem('moaz_ultra_data', JSON.stringify(myData));
-            document.getElementById('aiInput').value = "";
-            speak(de, 1);
+        <option value={1}>
+          Normal
+        </option>
+
+      </select>
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 📚 LESSON CARD
+////////////////////////////////////////////////////////////////////////////////
+
+function LessonCard({
+  item
+}) {
+
+  useEffect(() => {
+
+    speak(item.word, 0.8)
+
+  }, [item.word])
+
+  return (
+
+    <div className="
+    bg-white
+    rounded-3xl
+    p-6
+    shadow-2xl
+    mb-6
+    border-4
+    border-green-200
+    ">
+
+      <div className="
+      flex
+      justify-between
+      items-center
+      ">
+
+        <div>
+
+          <div className="
+          text-6xl
+          mb-3
+          ">
+            {item.emoji}
+          </div>
+
+          <h2 className="
+          text-4xl
+          font-black
+          mb-2
+          ">
+            {item.word}
+          </h2>
+
+          <p className="
+          text-2xl
+          text-green-600
+          font-bold
+          ">
+            {item.translation}
+          </p>
+
+        </div>
+
+        <VoicePlayer
+          text={item.word}
+        />
+
+      </div>
+
+      <div className="
+      mt-6
+      bg-gray-100
+      rounded-2xl
+      p-4
+      ">
+
+        <p className="
+        text-lg
+        font-bold
+        mb-2
+        ">
+          🇩🇪 Beispiel A1:
+        </p>
+
+        <p className="
+        text-xl
+        ">
+          {item.sentence}
+        </p>
+
+        <p className="
+        text-gray-600
+        mt-2
+        ">
+          {item.sentenceTranslation}
+        </p>
+
+      </div>
+
+      <div className="
+      mt-4
+      text-gray-500
+      ">
+        📚 Kategorie:
+        {" "}
+        {item.category}
+      </div>
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🧠 QUIZ CARD
+////////////////////////////////////////////////////////////////////////////////
+
+function QuizCard({
+  item,
+  onCorrect,
+  onWrong
+}) {
+
+  const [answer, setAnswer] =
+    useState("")
+
+  const [result, setResult] =
+    useState(null)
+
+  const submit = () => {
+
+    const check =
+      checkAnswer(
+        answer,
+        item.translation
+      )
+
+    setResult(check)
+
+    if (check.correct) {
+      onCorrect()
+    } else {
+      onWrong()
+    }
+  }
+
+  return (
+
+    <div className="
+    bg-white
+    rounded-3xl
+    p-6
+    shadow-2xl
+    ">
+
+      <div className="
+      flex
+      justify-between
+      items-center
+      ">
+
+        <div>
+
+          <h2 className="
+          text-3xl
+          font-black
+          mb-2
+          ">
+            ✍️ Quiz
+          </h2>
+
+          <p className="
+          text-2xl
+          ">
+            What is the meaning of:
+          </p>
+
+          <div className="
+          text-4xl
+          font-black
+          text-green-600
+          mt-3
+          ">
+            {item.word}
+          </div>
+
+        </div>
+
+        <VoicePlayer
+          text={item.word}
+        />
+
+      </div>
+
+      <input
+        value={answer}
+        onChange={(e) =>
+          setAnswer(e.target.value)
         }
+        placeholder="اكتب الترجمة..."
+        className="
+        mt-6
+        w-full
+        border-4
+        border-gray-200
+        focus:border-green-500
+        outline-none
+        rounded-2xl
+        p-4
+        text-xl
+        "
+      />
 
-        function speak(text, times) {
-            window.speechSynthesis.cancel();
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'de-DE';
-            msg.rate = 0.8;
-            for(let i=0; i<times; i++) window.speechSynthesis.speak(msg);
-        }
+      <button
+        onClick={submit}
+        className="
+        mt-5
+        w-full
+        bg-green-500
+        hover:bg-green-600
+        active:translate-y-1
+        transition-all
+        text-white
+        font-black
+        text-xl
+        p-4
+        rounded-2xl
+        shadow-xl
+        border-b-[6px]
+        border-green-700
+        "
+      >
 
-        function renderAudio() {
-            const list = document.getElementById('audioList');
-            list.innerHTML = myData.length ? '' : '<p class="opacity-50 text-center">أضف كلمات أولاً!</p>';
-            myData.forEach(w => {
-                list.innerHTML += `
-                    <div class="glass-ui p-4 flex justify-between items-center">
-                        <div><p class="font-bold text-emerald-400 text-xl">${w.de}</p><p class="text-sm opacity-60">${w.ar}</p></div>
-                        <div class="flex gap-2">
-                            <button onclick="speak('${w.de}', 1)" class="bg-blue-500 p-3 rounded-xl">🔊</button>
-                            <button onclick="speak('${w.de}', 3)" class="bg-emerald-500 p-3 rounded-xl text-xs font-bold">🔁 3x</button>
-                        </div>
-                    </div>`;
-            });
-        }
+        Check Answer
 
-        function startQuiz() {
-            const container = document.getElementById('quizContainer');
-            if(myData.length < 2) return container.innerHTML = "تحتاج لكلمتين للبدء";
-            const target = myData[Math.floor(Math.random() * myData.length)];
-            container.innerHTML = `<h2 class="text-4xl font-black mb-8">${target.de}</h2>
-                <div class="grid gap-4">
-                    ${myData.slice(0, 3).map(w => `<button onclick="check('${w.ar}','${target.ar}')" class="glass-ui p-4 font-bold hover:bg-emerald-500 transition-all">${w.ar}</button>`).join('')}
-                </div>`;
-        }
+      </button>
 
-        function check(s, c) {
-            if(s === c) { alert("صح! ✅"); startQuiz(); } else alert("غلط! ❌");
-        }
+      {result && (
 
-        function updateStats() { document.getElementById('wordCount').innerText = myData.length; }
-        updateStats();
-    </script>
-</body>
-</html>
+        <div className="
+        mt-5
+        ">
+
+          {result.correct ? (
+
+            <div className="
+            bg-green-100
+            text-green-700
+            p-4
+            rounded-2xl
+            flex
+            items-center
+            gap-2
+            text-xl
+            font-bold
+            ">
+
+              <Check />
+
+              {result.typo
+                ? "Correct (Typo Detected)"
+                : "Excellent!"}
+
+            </div>
+
+          ) : (
+
+            <div className="
+            bg-red-100
+            text-red-700
+            p-4
+            rounded-2xl
+            flex
+            items-center
+            gap-2
+            text-xl
+            font-bold
+            ">
+
+              <X />
+
+              Wrong Answer
+
+            </div>
+
+          )}
+
+        </div>
+
+      )}
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🎧 LISTENING MODE
+////////////////////////////////////////////////////////////////////////////////
+
+function ListeningMode({
+  item
+}) {
+
+  return (
+
+    <div className="
+    bg-white
+    rounded-3xl
+    p-6
+    shadow-2xl
+    mb-6
+    ">
+
+      <div className="
+      flex
+      justify-between
+      items-center
+      ">
+
+        <div>
+
+          <h2 className="
+          text-3xl
+          font-black
+          mb-3
+          ">
+            🎧 Listening Mode
+          </h2>
+
+          <p className="
+          text-xl
+          text-gray-600
+          ">
+            Listen carefully
+          </p>
+
+        </div>
+
+        <PlayCircle
+          className="
+          w-14
+          h-14
+          text-green-500
+          "
+        />
+
+      </div>
+
+      <div className="
+      mt-6
+      bg-gray-100
+      rounded-2xl
+      p-5
+      ">
+
+        <div className="
+        text-5xl
+        mb-3
+        ">
+          {item.emoji}
+        </div>
+
+        <div className="
+        text-3xl
+        font-black
+        ">
+          {item.word}
+        </div>
+
+        <div className="
+        text-xl
+        text-green-600
+        mt-2
+        ">
+          {item.translation}
+        </div>
+
+      </div>
+
+      <div className="
+      mt-5
+      ">
+
+        <VoicePlayer
+          text={item.word}
+        />
+
+      </div>
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🖥️ SIDEBAR
+////////////////////////////////////////////////////////////////////////////////
+
+function Sidebar() {
+
+  return (
+
+    <div className="
+    bg-white
+    rounded-3xl
+    shadow-2xl
+    p-5
+    h-fit
+    ">
+
+      <h2 className="
+      text-2xl
+      font-black
+      mb-5
+      ">
+        📚 Lessons
+      </h2>
+
+      <div className="
+      flex
+      flex-col
+      gap-4
+      ">
+
+        <button className="
+        bg-green-500
+        text-white
+        font-bold
+        p-4
+        rounded-2xl
+        shadow-lg
+        border-b-[6px]
+        border-green-700
+        active:translate-y-1
+        ">
+
+          A1 Vocabulary
+
+        </button>
+
+        <button className="
+        bg-blue-500
+        text-white
+        font-bold
+        p-4
+        rounded-2xl
+        shadow-lg
+        border-b-[6px]
+        border-blue-700
+        active:translate-y-1
+        ">
+
+          Listening
+
+        </button>
+
+        <button className="
+        bg-purple-500
+        text-white
+        font-bold
+        p-4
+        rounded-2xl
+        shadow-lg
+        border-b-[6px]
+        border-purple-700
+        active:translate-y-1
+        ">
+
+          Smart Quiz
+
+        </button>
+
+      </div>
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🚀 MAIN APP
+////////////////////////////////////////////////////////////////////////////////
+
+function MainApp() {
+
+  const {
+    gainXP,
+    loseHeart,
+    setProgress
+  } = useContext(AppContext)
+
+  const [index, setIndex] =
+    useState(0)
+
+  const currentWord =
+    useMemo(() => {
+      return WORDS[index]
+    }, [index])
+
+  const nextLesson = () => {
+
+    gainXP(10)
+
+    setProgress(prev =>
+      Math.min(prev + 15, 100)
+    )
+
+    setIndex(prev =>
+      (prev + 1) % WORDS.length
+    )
+  }
+
+  return (
+
+    <div className="
+    min-h-screen
+    bg-gradient-to-br
+    from-green-100
+    via-white
+    to-blue-100
+    p-6
+    ">
+
+      <Header />
+
+      <div className="
+      grid
+      lg:grid-cols-[300px_1fr]
+      gap-6
+      ">
+
+        <Sidebar />
+
+        <div>
+
+          <ProgressPanel />
+
+          <LessonCard
+            item={currentWord}
+          />
+
+          <ListeningMode
+            item={currentWord}
+          />
+
+          <QuizCard
+            item={currentWord}
+            onCorrect={nextLesson}
+            onWrong={loseHeart}
+          />
+
+        </div>
+
+      </div>
+
+    </div>
+  )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 🌍 ROOT
+////////////////////////////////////////////////////////////////////////////////
+
+export default function App() {
+
+  return (
+
+    <AppProvider>
+
+      <MainApp />
+
+    </AppProvider>
+  )
+}
