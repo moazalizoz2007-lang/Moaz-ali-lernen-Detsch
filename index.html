@@ -5,129 +5,225 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Moaz AI Pro - 2026</title>
     <style>
-        :root { --primary: #10b981; --bg: #0b0f1a; --card: #161e2d; --text: #f8fafc; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding-bottom: 80px; }
+        :root { --primary: #10b981; --bg: #0b0f1a; --card: #161e2d; --text: #f8fafc; --blue: #3b82f6; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 90px; }
         
         /* Header */
-        .header { padding: 30px 20px; text-align: center; background: linear-gradient(to bottom, #10b98133, transparent); }
-        .header h1 { font-size: 28px; margin: 0; color: var(--primary); font-weight: 900; }
+        .header { padding: 25px 20px; text-align: center; background: linear-gradient(to bottom, #10b98133, transparent); border-bottom: 1px solid #10b98133; }
+        .header h1 { font-size: 26px; margin: 0; color: var(--primary); font-weight: 900; }
 
         .page { display: none; padding: 20px; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* AI Cards */
-        .smart-card { background: var(--card); border-radius: 25px; padding: 20px; border: 1px solid #ffffff14; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        textarea { width: 100%; background: transparent; border: none; color: white; font-size: 18px; outline: none; height: 100px; resize: none; }
+        /* Cards & Inputs */
+        .smart-card { background: var(--card); border-radius: 25px; padding: 20px; border: 1px solid #ffffff14; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 18px; outline: none; height: 100px; resize: none; border-radius: 15px; padding: 15px; box-sizing: border-box; }
         
-        .btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 18px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        /* Buttons */
+        .btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s; font-size: 16px; }
         .btn:active { transform: scale(0.95); }
+        .btn-audio { background: var(--blue); margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .play-icon { background: var(--blue); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
 
         /* Navigation Bar */
-        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(22, 30, 45, 0.9); backdrop-filter: blur(15px); border-radius: 20px; display: flex; justify-content: space-around; padding: 12px; border: 1px solid #ffffff14; z-index: 1000; }
-        .nav-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 10px; border-radius: 15px; transition: 0.3s; grayscale: 1; }
-        .nav-btn.active { background: var(--primary); grayscale: 0; transform: translateY(-5px); }
+        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(22, 30, 45, 0.95); backdrop-filter: blur(15px); border-radius: 20px; display: flex; justify-content: space-around; padding: 10px; border: 1px solid #ffffff14; z-index: 1000; }
+        .nav-btn { background: none; border: none; font-size: 26px; cursor: pointer; padding: 10px; border-radius: 15px; transition: 0.3s; filter: grayscale(1); }
+        .nav-btn.active { background: var(--primary); filter: grayscale(0); transform: translateY(-5px); }
 
-        /* Results */
+        /* Output & Images */
         .ai-output { margin-top: 20px; padding: 15px; border-radius: 15px; background: #10b9811a; border-right: 4px solid var(--primary); display: none; }
         .word-img { width: 100%; height: 200px; border-radius: 20px; object-fit: cover; margin-top: 15px; display: none; border: 2px solid var(--primary); }
+        
+        /* Library & Quiz */
+        .lib-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ffffff14; font-size: 18px; font-weight: bold; }
+        .quiz-option { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; font-weight: bold; color: white; text-align: center; font-size: 18px; transition: 0.2s; }
+        .quiz-option:active { background: var(--primary); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>MOAZ AI SYSTEM</h1>
-        <p style="opacity: 0.7; font-size: 12px;">المحرك الذكي V3.5 - 2026</p>
+        <h1>MOAZ DEUTSCH PRO</h1>
+        <p style="opacity: 0.7; font-size: 12px; margin: 5px 0 0 0;">ذكاء اصطناعي • قاموس • استماع • اختبارات</p>
     </div>
 
-    <!-- الصفحات -->
+    <!-- 1. صفحة الذكاء الاصطناعي والإدخال -->
     <div id="home" class="page active">
         <div class="smart-card">
-            <h3 style="margin-top:0">🧠 تحليل الـ AI القوي</h3>
-            <textarea id="aiInput" placeholder="اكتب جملة ألمانية معقدة هنا.."></textarea>
-            <button class="btn" onclick="deepAnalysis()">بدء التحليل العميق</button>
+            <h3 style="margin-top:0">🤖 المعالج الذكي (كلمة - ترجمة)</h3>
+            <textarea id="aiInput" placeholder="اكتب هنا.. مثال:&#10;Schule - مدرسة"></textarea>
+            <button class="btn" onclick="deepAnalysis()">تحليل وإضافة للقاموس 🚀</button>
             
-            <div id="aiLoader" style="display:none; text-align:center; margin:10px;">جاري تشغيل محركات الذكاء...</div>
+            <div id="aiLoader" style="display:none; text-align:center; margin:15px; color:var(--primary);">جاري التحليل واستدعاء الصور...</div>
             
             <div id="aiOutput" class="ai-output"></div>
             <img id="aiImg" class="word-img" src="">
+            
+            <!-- أزرار الاستماع ظهرت هنا -->
+            <div id="audioControls" style="display: none;">
+                <button class="btn btn-audio" onclick="speakCurrent(1)">🔊 استماع مرة واحدة</button>
+                <button class="btn btn-audio" style="background:#8b5cf6;" onclick="speakCurrent(3)">🔁 استماع مكرر (3 مرات)</button>
+            </div>
         </div>
     </div>
 
+    <!-- 2. صفحة القاموس -->
     <div id="library" class="page">
-        <h2>📚 قاموسك الشخصي</h2>
-        <div class="smart-card" id="wordList">لا يوجد كلمات محفوظة بعد.</div>
-    </div>
-
-    <div id="quiz" class="page">
-        <h2>🏆 تحدي الـ 2026</h2>
-        <div class="smart-card text-center">
-            <p>قسم التحديات الذكية قيد التحديث ليتناسب مع مستواك الجديد.</p>
+        <h2 style="text-align: center;">📚 قاموسك الشخصي</h2>
+        <div class="smart-card" id="wordList">
+            <div style="text-align:center; opacity:0.5;">لا توجد كلمات، أضفها من المعالج الذكي!</div>
         </div>
     </div>
 
-    <!-- الشريط السفلي -->
+    <!-- 3. صفحة الاختبارات (Quiz) -->
+    <div id="quiz" class="page">
+        <h2 style="text-align: center;">🏆 تحدي الذكاء</h2>
+        <div class="smart-card" id="quizContainer">
+            <div style="text-align:center; opacity:0.5;">أضف كلمات أولاً لتبدأ الاختبار!</div>
+        </div>
+    </div>
+
+    <!-- الشريط السفلي للتبديل -->
     <div class="nav-bar">
         <button class="nav-btn active" onclick="changePage('home', this)">🤖</button>
         <button class="nav-btn" onclick="changePage('library', this)">📚</button>
-        <button class="nav-btn" onclick="changePage('quiz', this)">🏆</button>
+        <button class="nav-btn" onclick="changePage('quiz', this)" onclick="startQuiz()">🏆</button>
     </div>
 
     <script>
-        // تبديل الصفحات (الخانات شغالة دلوقتي)
+        // الذاكرة
+        let myDictionary = JSON.parse(localStorage.getItem('moaz_dict')) || [];
+        let currentGermanWord = "";
+
+        // تهيئة القاموس عند فتح الموقع
+        window.onload = () => { renderLibrary(); }
+
+        // التبديل بين الصفحات
         function changePage(pageId, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+
+            if(pageId === 'quiz') startQuiz();
         }
 
-        // التحليل الذكي القوي مع الصور
+        // نطق الكلمات (الاستماع)
+        function speak(text, times) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'de-DE'; // القاموس الألماني
+            msg.rate = 0.85; // بطيء شوية عشان الحفظ
+            for(let i=0; i<times; i++) {
+                window.speechSynthesis.speak(msg);
+            }
+        }
+        function speakCurrent(times) { if(currentGermanWord) speak(currentGermanWord, times); }
+
+        // التحليل الذكي
         function deepAnalysis() {
             const text = document.getElementById('aiInput').value;
-            if(!text) return;
+            if(!text.includes('-')) return alert("يرجى كتابة الكلمة وترجمتها هكذا: Auto - سيارة");
+
+            let [de, ar] = text.split('-').map(s => s.trim());
+            currentGermanWord = de;
 
             const loader = document.getElementById('aiLoader');
             const output = document.getElementById('aiOutput');
             const img = document.getElementById('aiImg');
+            const audioCtrl = document.getElementById('audioControls');
 
             loader.style.display = 'block';
-            output.style.display = 'none';
-            img.style.display = 'none';
+            output.style.display = 'none'; img.style.display = 'none'; audioCtrl.style.display = 'none';
 
-            // محاكاة معالجة ذكاء اصطناعي قوية
             setTimeout(() => {
                 loader.style.display = 'none';
-                output.style.display = 'block';
                 
-                // ذكاء اصطناعي لتحليل الجملة
-                const analysis = `
-                    <b>التحليل اللغوي:</b> تم رصد جملة بتركيب ألماني صحيح.<br>
-                    <b>القاعدة:</b> الفعل جاء في المركز الثاني (V2).<br>
-                    <b>المعنى:</b> "${text}" تشير إلى سياق تعليمي متقدم.
-                `;
-                output.innerHTML = analysis;
-
-                // خانة الصورة الذكية (تتغير بناءً على الكلمة)
-                // بستخدم مصدر صور عشوائي مرتبط بالتعلم لضمان الجودة
-                const randomId = Math.floor(Math.random() * 1000);
-                img.src = `https://picsum.photos/seed/${text}/800/500`; 
+                // عرض التحليل
+                output.style.display = 'block';
+                output.innerHTML = `<b>✨ تم الحفظ والتصحيح:</b><br><span style="font-size:24px; color:#10b981;">${de}</span><br>المعنى: ${ar}`;
+                
+                // جلب صورة تناسب الكلمة
+                img.src = `https://source.unsplash.com/800x500/?${encodeURIComponent(de)},education`; 
                 img.style.display = 'block';
 
-                // حفظ الكلمة في القاموس تلقائياً
-                saveToLibrary(text);
-            }, 1500);
+                // إظهار أزرار الاستماع
+                audioCtrl.style.display = 'block';
+
+                // الحفظ في القاموس
+                const newEntry = { de: de, ar: ar, id: Date.now() };
+                myDictionary.push(newEntry);
+                localStorage.setItem('moaz_dict', JSON.stringify(myDictionary));
+                renderLibrary();
+                
+                document.getElementById('aiInput').value = ""; // تفريغ الخانة
+            }, 1000);
         }
 
-        function saveToLibrary(word) {
+        // عرض القاموس
+        function renderLibrary() {
             const list = document.getElementById('wordList');
-            if(list.innerText.includes('لا يوجد')) list.innerHTML = '';
-            const item = document.createElement('div');
-            item.style.padding = '10px';
-            item.style.borderBottom = '1px solid #ffffff14';
-            item.innerHTML = `✅ ${word}`;
-            list.appendChild(item);
+            if(myDictionary.length === 0) return;
+            
+            list.innerHTML = '';
+            myDictionary.forEach(word => {
+                const item = document.createElement('div');
+                item.className = 'lib-item';
+                item.innerHTML = `
+                    <div>
+                        <div style="color:var(--primary);">${word.de}</div>
+                        <div style="font-size:14px; opacity:0.7;">${word.ar}</div>
+                    </div>
+                    <button class="play-icon" onclick="speak('${word.de}', 1)">🔊</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // نظام الاختبارات الذكي
+        function startQuiz() {
+            const container = document.getElementById('quizContainer');
+            if(myDictionary.length < 2) {
+                container.innerHTML = `<div style="text-align:center; opacity:0.5;">تحتاج إلى كلمتين على الأقل في القاموس لبدء الاختبار.</div>`;
+                return;
+            }
+
+            // اختيار كلمة عشوائية
+            const correctWord = myDictionary[Math.floor(Math.random() * myDictionary.length)];
+            
+            // عمل اختيارات
+            let options = [correctWord.ar];
+            while(options.length < 3 && options.length < myDictionary.length) {
+                const randomOpt = myDictionary[Math.floor(Math.random() * myDictionary.length)].ar;
+                if(!options.includes(randomOpt)) options.push(randomOpt);
+            }
+            options.sort(() => Math.random() - 0.5); // لخبطة الاختيارات
+
+            // رسم الاختبار
+            container.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <p style="opacity:0.7;">ما معنى هذه الكلمة؟</p>
+                    <h1 style="font-size:40px; margin:10px 0; color:var(--primary);">${correctWord.de}</h1>
+                    <button class="play-icon" style="margin:0 auto;" onclick="speak('${correctWord.de}', 1)">🔊</button>
+                </div>
+            `;
+
+            options.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'quiz-option';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if(opt === correctWord.ar) {
+                        alert("✅ إجابة صحيحة يا وحش!");
+                        startQuiz(); // سؤال جديد
+                    } else {
+                        alert("❌ خطأ! حاول تاني.");
+                    }
+                };
+                container.appendChild(btn);
+            });
         }
     </script>
 </body>
