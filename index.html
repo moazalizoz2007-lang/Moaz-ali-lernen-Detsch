@@ -2,82 +2,68 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deutsch mit Moaz Ali DKW</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-        body { font-family: 'Cairo', sans-serif; background: #f0f2f5; }
-        .page { animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; }
+        .gradient-bg { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState } = React;
 
-        function App() {
-            const [page, setPage] = useState('home'); // home, add, learn, quiz
-            const [words, setWords] = useState([]);
-            const [input, setInput] = useState("");
+<div id="app" class="max-w-2xl mx-auto p-4">
+    <!-- Header -->
+    <div class="gradient-bg text-white p-6 rounded-3xl shadow-xl mb-6 text-center">
+        <h1 class="text-3xl font-black">DEUTSCH MIT MOAZ</h1>
+        <p class="font-bold opacity-90">ALI DKW - منصة التعلم الذكي</p>
+    </div>
 
-            const handleLoad = () => {
-                const p = input.split('\n').filter(l => l.includes('-')).map(l => ({de: l.split('-')[0].trim(), ar: l.split('-')[1].trim()}));
-                setWords(p);
-                setPage('home');
-            };
+    <!-- Navigation -->
+    <div class="grid grid-cols-3 gap-2 mb-6">
+        <button onclick="showPage('add')" class="bg-white py-3 rounded-xl font-bold shadow-sm border border-gray-200">➕ إضافة</button>
+        <button onclick="showPage('learn')" class="bg-white py-3 rounded-xl font-bold shadow-sm border border-gray-200">📖 ذاكر</button>
+        <button onclick="showPage('quiz')" class="bg-white py-3 rounded-xl font-bold shadow-sm border border-gray-200">🏆 اختبار</button>
+    </div>
 
-            return (
-                <div className="min-h-screen pb-24">
-                    {/* الخانات (Navigation) */}
-                    <nav className="fixed bottom-0 w-full bg-white border-t-2 border-gray-200 flex justify-around p-4 z-50">
-                        <button onClick={() => setPage('home')} className="font-bold text-gray-500">🏠 الرئيسية</button>
-                        <button onClick={() => setPage('add')} className="font-bold text-gray-500">➕ إضافة</button>
-                        <button onClick={() => setPage('learn')} className="font-bold text-gray-500">📖 تعلم</button>
-                        <button onClick={() => setPage('quiz')} className="font-bold text-gray-500">🏆 تحدي</button>
-                    </nav>
+    <!-- Pages -->
+    <div id="content" class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 min-h-[300px]">
+        <!-- المحتوى بيتغير هنا -->
+    </div>
+</div>
 
-                    <div className="p-6">
-                        {page === 'home' && (
-                            <div className="page text-center mt-20">
-                                <h1 className="text-4xl font-black text-green-600">Deutsch mit Moaz Ali DKW</h1>
-                                <p className="text-gray-500 mt-4">مرحباً بك في منصتك الخاصة للتعلم</p>
-                            </div>
-                        )}
+<script>
+    let words = JSON.parse(localStorage.getItem('myWords')) || [];
 
-                        {page === 'add' && (
-                            <div className="page bg-white p-6 rounded-2xl shadow">
-                                <h2 className="text-2xl font-bold mb-4">أضف كلماتك</h2>
-                                <textarea className="w-full h-64 border-2 p-4 rounded-xl" placeholder="كلمة - ترجمة" value={input} onChange={e => setInput(e.target.value)} />
-                                <button onClick={handleLoad} className="w-full bg-green-600 text-white p-4 rounded-xl font-bold mt-4">حفظ القاموس</button>
-                            </div>
-                        )}
-
-                        {page === 'learn' && (
-                            <div className="page text-center">
-                                {words.length > 0 ? words.map((w, i) => (
-                                    <div key={i} className="bg-white p-8 rounded-2xl shadow mb-4">
-                                        <h2 className="text-3xl font-bold">{w.de}</h2>
-                                        <p className="text-gray-400 mt-2">{w.ar}</p>
-                                    </div>
-                                )) : <p>لا توجد كلمات، أضفها أولاً!</p>}
-                            </div>
-                        )}
-
-                        {page === 'quiz' && (
-                            <div className="page text-center">
-                                <h2 className="text-2xl font-bold mb-6">اختبار الذكاء</h2>
-                                {words.length > 0 ? <p className="text-green-600 font-bold">جاري تشغيل الاختبار لنظام {words.length} كلمة...</p> : <p>أضف كلمات أولاً!</p>}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
+    function showPage(page) {
+        const content = document.getElementById('content');
+        if(page === 'add') {
+            content.innerHTML = `
+                <h2 class="text-xl font-bold mb-4">أضف كلماتك (كلمة - ترجمة)</h2>
+                <textarea id="wordInput" class="w-full h-40 p-4 bg-gray-50 rounded-xl mb-4 border" placeholder="Hallo - مرحبا"></textarea>
+                <button onclick="saveWords()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">حفظ الكلمات</button>
+            `;
+        } else if(page === 'learn') {
+            content.innerHTML = words.length > 0 ? `<h2 class="text-center font-bold text-2xl">${words[0].de}</h2><p class="text-center text-gray-500">${words[0].ar}</p>` : "لا توجد كلمات!";
+        } else {
+            content.innerHTML = `<h2 class="text-center font-bold text-2xl">جاري تطوير الاختبار...</h2>`;
         }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+    }
+
+    function saveWords() {
+        const input = document.getElementById('wordInput').value;
+        const newWords = input.split('\n').map(l => {
+            const [de, ar] = l.split('-');
+            return { de: de.trim(), ar: ar.trim() };
+        });
+        localStorage.setItem('myWords', JSON.stringify(newWords));
+        words = newWords;
+        alert("تم الحفظ بنجاح!");
+    }
+
+    showPage('add'); // البداية
+</script>
+
 </body>
 </html>
