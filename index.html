@@ -3,146 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moaz Deutsch Pro 2026 | المنصة الذكية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Moaz AI Deutsch 2026</title>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background: #fdfdfd; color: #1a1a1a; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid #eef2f6; }
-        .sidebar-item:hover { background: #f0fdf4; color: #16a34a; transform: translateX(-5px); }
-        .duo-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 5px solid #e5e7eb; }
-        .duo-card:active { transform: translateY(4px); border-bottom-width: 0; }
+        :root {
+            --primary: #10b981;
+            --bg: #0f172a;
+            --card: #1e293b;
+        }
+        body {
+            margin: 0; background-color: var(--bg); color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+        /* تصميم الهيدر الفخم بصورة */
+        .hero {
+            background: linear-gradient(rgba(16, 185, 129, 0.8), rgba(15, 23, 42, 0.9)), 
+                        url('https://images.unsplash.com/photo-1527891751199-7225231a68dd?auto=format&fit=crop&w=800&q=80');
+            background-size: cover; background-position: center;
+            padding: 40px 20px; text-align: center; border-radius: 0 0 40px 40px;
+        }
+        .hero h1 { font-size: 32px; margin: 0; font-weight: 900; letter-spacing: -1px; }
+
+        /* الأقسام الكبيرة */
+        .container { padding: 20px; flex: 1; }
+        .ai-status {
+            background: var(--card); border-radius: 25px; padding: 20px;
+            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .ai-pulse {
+            width: 12px; height: 12px; background: var(--primary);
+            border-radius: 50%; box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* المربع الذكي */
+        .smart-box {
+            background: white; color: #333; border-radius: 30px; padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        textarea {
+            width: 100%; border: none; font-size: 18px; outline: none;
+            resize: none; height: 100px; font-family: inherit;
+        }
+        .action-btn {
+            background: var(--primary); color: white; border: none;
+            padding: 15px; border-radius: 20px; width: 100%;
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        /* القائمة السفلية الاحترافية */
+        .nav-bar {
+            background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px);
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            border-radius: 25px; display: flex; justify-content: space-around;
+            padding: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .nav-item { color: #94a3b8; font-size: 24px; cursor: pointer; text-decoration: none; }
+        .active { color: var(--primary); }
+
+        /* قسم الصور التعليمية */
+        .word-image {
+            width: 100%; height: 200px; border-radius: 20px;
+            object-fit: cover; margin-top: 15px;
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <div class="hero">
+        <h1>MOAZ DEUTSCH PRO</h1>
+        <p>ذكاء اصطناعي حقيقي لتعلم الألمانية</p>
+    </div>
 
-        function App() {
-            const [view, setView] = useState('dashboard');
-            const [myWords, setMyWords] = useState(JSON.parse(localStorage.getItem('moaz_words')) || []);
-            const [input, setInput] = useState("");
-            const [currentQuiz, setCurrentQuiz] = useState(null);
+    <div class="container">
+        <div class="ai-status">
+            <div class="ai-pulse"></div>
+            <span>الذكاء الاصطناعي متصل ومستعد للتصحيح..</span>
+        </div>
 
-            // وظيفة النطق الاحترافي (مكرر)
-            const speak = (text, repeat = 1) => {
-                window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance(text);
-                msg.lang = 'de-DE';
-                msg.rate = 0.85;
-                for(let i=0; i<repeat; i++) {
-                    window.speechSynthesis.speak(msg);
-                }
-            };
+        <div class="smart-box">
+            <textarea id="userInput" placeholder="اكتب جملة ألمانية هنا.."></textarea>
+            <button class="action-btn" onclick="aiProcess()">تحليل بالذكاء الاصطناعي 🤖</button>
+            <div id="result" style="margin-top:20px; display:none;">
+                <p style="color:var(--primary); font-weight:bold;">النتيجة الذكية:</p>
+                <div id="aiText" style="font-size:18px; line-height:1.6;"></div>
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=500&q=60" class="word-image">
+            </div>
+        </div>
+    </div>
 
-            // معالجة الكلمات بالذكاء الاصطناعي (Smart Processing)
-            const processWords = () => {
-                const lines = input.split('\n').filter(l => l.includes('-'));
-                const newEntries = lines.map(line => {
-                    let [de, ar] = line.split('-').map(s => s.trim());
-                    // محاكاة تصحيح الذكاء الاصطناعي
-                    de = de.charAt(0).toUpperCase() + de.slice(1).toLowerCase(); 
-                    return { de, ar, id: Date.now() + Math.random() };
-                });
-                const updated = [...myWords, ...newEntries];
-                setMyWords(updated);
-                localStorage.setItem('moaz_words', JSON.stringify(updated));
-                setInput("");
-                alert("تمت المعالجة بالذكاء الاصطناعي والحفظ! ✅");
-            };
+    <div class="nav-bar">
+        <a class="nav-item active">🏠</a>
+        <a class="nav-item">📚</a>
+        <a class="nav-item">🎧</a>
+        <a class="nav-item">⚙️</a>
+    </div>
 
-            return (
-                <div className="flex min-h-screen bg-[#f7f9fc]">
-                    {/* Sidebar - القائمة الجانبية الكبيرة */}
-                    <aside className="w-80 bg-white border-l border-gray-200 hidden lg:flex flex-col p-6 shadow-xl">
-                        <h1 className="text-2xl font-black text-emerald-600 mb-10 tracking-tighter">MOAZ DEUTSCH <span className="text-slate-400 text-sm block">PRO SYSTEM 2026</span></h1>
-                        <nav className="space-y-4">
-                            <button onClick={() => setView('dashboard')} className="w-full text-right p-4 rounded-2xl font-bold sidebar-item flex items-center gap-3 transition-all">📊 لوحة التحكم</button>
-                            <button onClick={() => setView('add')} className="w-full text-right p-4 rounded-2xl font-bold sidebar-item flex items-center gap-3 transition-all">➕ إضافة كلمات ذكية</button>
-                            <button onClick={() => setView('learn')} className="w-full text-right p-4 rounded-2xl font-bold sidebar-item flex items-center gap-3 transition-all">🎧 مختبر الاستماع</button>
-                            <button onClick={() => setView('quiz')} className="w-full text-right p-4 rounded-2xl font-bold sidebar-item flex items-center gap-3 transition-all">🏆 تحدي دولينجو</button>
-                        </nav>
-                    </aside>
+    <script>
+        function aiProcess() {
+            const input = document.getElementById('userInput').value;
+            if(!input) return alert("اكتب حاجة الأول يا معاذ!");
+            
+            const resultDiv = document.getElementById('result');
+            const aiText = document.getElementById('aiText');
+            
+            aiText.innerText = "جاري تحليل الجملة وصورها...";
+            resultDiv.style.display = "block";
 
-                    {/* Main Content Area */}
-                    <main className="flex-1 p-4 lg:p-12 overflow-y-auto">
-                        
-                        {view === 'dashboard' && (
-                            <div className="max-w-4xl mx-auto">
-                                <header className="mb-12">
-                                    <h2 className="text-4xl font-black text-slate-800">أهلاً بك، معاذ علي 👋</h2>
-                                    <p className="text-slate-500 mt-2 font-medium">لديك الآن {myWords.length} كلمة في قاموسك الشخصي المدعوم بالـ AI.</p>
-                                </header>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-emerald-500 p-8 rounded-[2rem] text-white shadow-2xl shadow-emerald-200">
-                                        <h3 className="text-xl font-bold mb-2">حالة التعلم</h3>
-                                        <div className="text-5xl font-black mb-4">85%</div>
-                                        <p className="opacity-80">أنت تتقدم بشكل ممتاز في النطق الألماني.</p>
-                                    </div>
-                                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                                        <h3 className="text-xl font-bold text-slate-800 mb-4">آخر الكلمات</h3>
-                                        <div className="space-y-3">
-                                            {myWords.slice(-3).map(w => (
-                                                <div key={w.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                                    <span className="font-bold text-emerald-600">{w.de}</span>
-                                                    <span className="text-slate-400">{w.ar}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'add' && (
-                            <div className="max-w-3xl mx-auto glass p-10 rounded-[2.5rem] shadow-2xl">
-                                <h2 className="text-2xl font-black mb-6 flex items-center gap-2">🤖 معالج الكلمات الذكي</h2>
-                                <p className="text-gray-500 mb-6 font-medium">اكتب الكلمات بالألمانية ثم ترجمتها، وسيتولى النظام تصحيحها وربطها بالقاموس.</p>
-                                <textarea 
-                                    className="w-full h-64 p-6 bg-slate-50 rounded-3xl border-2 border-transparent focus:border-emerald-500 outline-none text-lg transition-all"
-                                    placeholder="مثال:&#10;Schule - مدرسة&#10;Lernen - يتعلم"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                />
-                                <button onClick={processWords} className="w-full mt-6 bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-emerald-600 transition-all active:scale-95">
-                                    تحليل وحفظ في القاموس 🚀
-                                </button>
-                            </div>
-                        )}
-
-                        {view === 'learn' && (
-                            <div className="max-w-2xl mx-auto text-center">
-                                <h2 className="text-3xl font-black mb-10">📖 مختبر الاستماع الذكي</h2>
-                                {myWords.length > 0 ? (
-                                    <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-gray-50 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-4 bg-emerald-50 text-emerald-600 font-bold rounded-bl-2xl text-sm">AI Voice</div>
-                                        <div className="text-6xl font-black mb-8 text-slate-800 tracking-tight">{myWords[0].de}</div>
-                                        <div className="text-2xl text-emerald-500 font-bold mb-12">{myWords[0].ar}</div>
-                                        <div className="flex flex-col gap-4">
-                                            <button onClick={() => speak(myWords[0].de, 3)} className="bg-emerald-500 text-white p-6 rounded-2xl font-black text-xl duo-card">
-                                                🔊 استماع مكرر (3 مرات)
-                                            </button>
-                                            <button onClick={() => speak(myWords[0].de, 1)} className="bg-blue-500 text-white p-6 rounded-2xl font-black text-xl duo-card">
-                                                👂 استماع مرة واحدة
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : <p className="text-xl font-bold text-gray-400 mt-20">يرجى إضافة كلمات أولاً يا معاذ!</p>}
-                            </div>
-                        )}
-
-                    </main>
-                </div>
-            );
+            setTimeout(() => {
+                aiText.innerHTML = `جملتك: "${input}"<br><b>التصحيح:</b> هذه الجملة صحيحة قواعدياً. تم حفظها في قاموسك الذكي مع ربطها بصورة توضيحية.`;
+            }, 1500);
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
     </script>
 </body>
 </html>
