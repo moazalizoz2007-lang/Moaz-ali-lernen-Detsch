@@ -1,15 +1,2649 @@
+import React, { useContext, useMemo, useRef, useState } from "react";
+import {
+  BookOpen,
+  Brain,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  GraduationCap,
+  Headphones,
+  Image as ImageIcon,
+  LayoutDashboard,
+  Lightbulb,
+  Moon,
+  Plus,
+  Repeat2,
+  Sparkles,
+  Sun,
+  Swords,
+  Trophy,
+  Volume2,
+  XCircle,
+} from "lucide-react";
 
+const AppContext = React.createContext(null);
+
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const uid = () => Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+const normalize = (s) =>
+  (s ?? "")
+    .toString()
+    .trim()
+    .replace(/\s+/g, " ")
+    .normalize("NFKC");
+
+const toLowerDe = (s) => normalize(s).toLocaleLowerCase("de-DE");
+
+const LEVELS = [
+  { key: "A1", minXp: 0, title: "A1" },
+  { key: "A2", minXp: 250, title: "A2" },
+  { key: "B1", minXp: 800, title: "B1" },
+];
+
+const DIFFICULTY_ORDER = ["A1", "A2", "B1", "B2"];
+
+const CATEGORY_ICONS = {
+  Alltag: "🧺",
+  Essen: "🍎",
+  Tiere: "🐾",
+  Reisen: "🧭",
+  Haus: "🏠",
+  Kleidung: "👕",
+};
+
+const seedWords = [
+  {
+    id: "w1",
+    de: "der Apfel",
+    ar: "تفاحة",
+    image:
+      "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=1200&q=80",
+    category: "Essen",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w2",
+    de: "das Brot",
+    ar: "خبز",
+    image:
+      "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=1200&q=80",
+    category: "Essen",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w3",
+    de: "die Katze",
+    ar: "قطة",
+    image:
+      "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1200&q=80",
+    category: "Tiere",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w4",
+    de: "der Hund",
+    ar: "كلب",
+    image:
+      "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?auto=format&fit=crop&w=1200&q=80",
+    category: "Tiere",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w5",
+    de: "die Jacke",
+    ar: "سترة",
+    image:
+      "https://images.unsplash.com/photo-1520975958223-b4d43b6c2a39?auto=format&fit=crop&w=1200&q=80",
+    category: "Kleidung",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w6",
+    de: "die Wohnung",
+    ar: "شقة",
+    image:
+      "https://images.unsplash.com/photo-1560185127-6a8c0ee4d6bb?auto=format&fit=crop&w=1200&q=80",
+    category: "Haus",
+    difficulty: "A2",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w7",
+    de: "der Bahnhof",
+    ar: "محطة القطار",
+    image:
+      "https://images.unsplash.com/photo-1522770179533-24471fcdba45?auto=format&fit=crop&w=1200&q=80",
+    category: "Reisen",
+    difficulty: "A2",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w8",
+    de: "ich gehe",
+    ar: "أنا أذهب",
+    image:
+      "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1200&q=80",
+    category: "Alltag",
+    difficulty: "A1",
+    tags: ["Verb", "Präsens"],
+  },
+  {
+    id: "w9",
+    de: "wir lernen",
+    ar: "نحن نتعلم",
+    image:
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
+    category: "Alltag",
+    difficulty: "A2",
+    tags: ["Verb", "Präsens"],
+  },
+  {
+    id: "w10",
+    de: "die Reise",
+    ar: "رحلة",
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    category: "Reisen",
+    difficulty: "A2",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w11",
+    de: "das Wasser",
+    ar: "ماء",
+    image:
+      "https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&w=1200&q=80",
+    category: "Essen",
+    difficulty: "A1",
+    tags: ["Nomen", "Artikel"],
+  },
+  {
+    id: "w12",
+    de: "die Straße",
+    ar: "شارع",
+    image:
+      "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=1200&q=80",
+    category: "Alltag",
+    difficulty: "B1",
+    tags: ["Nomen", "Artikel"],
+  },
+];
+
+const createInitialProgress = (words) => {
+  const masteryById = {};
+  const statsById = {};
+  for (const w of words) {
+    masteryById[w.id] = 0; // 0..100
+    statsById[w.id] = { correct: 0, wrong: 0, lastSeenAt: 0, lastResult: null };
+  }
+  return { masteryById, statsById };
+};
 
 function App() {
+  const [theme, setTheme] = useState("dark");
+  const [route, setRoute] = useState("dashboard"); // dashboard | vocab | flashcards | quiz | teacher
+  const [words, setWords] = useState(seedWords);
+
+  const [progress, setProgress] = useState(() => ({
+    xp: 0,
+    streak: { count: 0, lastStudyDay: null },
+    ...createInitialProgress(seedWords),
+    sessions: { totalAnswers: 0, correctAnswers: 0 },
+  }));
+
+  const [filters, setFilters] = useState({
+    category: "Alle",
+    difficulty: "Alle",
+    query: "",
+  });
+
+  const [flashState, setFlashState] = useState({
+    index: 0,
+    mode: "alle", // alle | wiederholen | gemeistert
+  });
+
+  const [quizState, setQuizState] = useState(() => ({
+    running: false,
+    type: 1, // 1 or 2
+    current: null,
+    questionId: null,
+    selected: null,
+    revealed: false,
+    correct: null,
+    score: 0,
+    total: 0,
+    lastDeltaXp: 0,
+    lastMasteryDelta: 0,
+    lastWordId: null,
+    seed: uid(),
+  }));
+
+  const speech = useSpeechSynthesis();
+
+  const level = useMemo(() => {
+    const xp = progress.xp;
+    let current = LEVELS[0];
+    for (const lv of LEVELS) if (xp >= lv.minXp) current = lv;
+    const nextIdx = Math.min(LEVELS.length - 1, LEVELS.findIndex((l) => l.key === current.key) + 1);
+    const next = LEVELS[nextIdx];
+    const nextMin = next.minXp;
+    const currentMin = current.minXp;
+    const range = Math.max(1, nextMin - currentMin);
+    const pct = clamp(Math.round(((xp - currentMin) / range) * 100), 0, 100);
+    return { current, next, pct };
+  }, [progress.xp]);
+
+  const categories = useMemo(() => {
+    const set = new Set(words.map((w) => w.category));
+    return ["Alle", ...Array.from(set).sort((a, b) => a.localeCompare(b, "de"))];
+  }, [words]);
+
+  const difficulties = useMemo(() => ["Alle", ...DIFFICULTY_ORDER], []);
+
+  const filteredWords = useMemo(() => {
+    const q = toLowerDe(filters.query);
+    return words
+      .filter((w) => (filters.category === "Alle" ? true : w.category === filters.category))
+      .filter((w) => (filters.difficulty === "Alle" ? true : w.difficulty === filters.difficulty))
+      .filter((w) => {
+        if (!q) return true;
+        const hay = toLowerDe([w.de, w.ar, w.category, w.difficulty, ...(w.tags || [])].join(" "));
+        return hay.includes(q);
+      });
+  }, [words, filters]);
+
+  const studyDayKey = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const ensureStreakForToday = () => {
+    setProgress((p) => {
+      const last = p.streak.lastStudyDay;
+      if (last === studyDayKey) return p;
+
+      if (!last) {
+        return { ...p, streak: { count: 1, lastStudyDay: studyDayKey } };
+      }
+      const lastDate = new Date(last + "T00:00:00");
+      const todayDate = new Date(studyDayKey + "T00:00:00");
+      const diffDays = Math.round((todayDate.getTime() - lastDate.getTime()) / (24 * 3600 * 1000));
+      if (diffDays === 1) {
+        return { ...p, streak: { count: p.streak.count + 1, lastStudyDay: studyDayKey } };
+      }
+      return { ...p, streak: { count: 1, lastStudyDay: studyDayKey } };
+    });
+  };
+
+  const awardForAnswer = ({ wordId, isCorrect, mode }) => {
+    ensureStreakForToday();
+
+    const baseXp = isCorrect ? 14 : 4;
+    const speedBonus = mode === "quiz" && isCorrect ? 2 : 0;
+    const masteryDelta = isCorrect ? 12 : -8;
+
+    setProgress((p) => {
+      const prevMastery = p.masteryById[wordId] ?? 0;
+      const nextMastery = clamp(prevMastery + masteryDelta, 0, 100);
+
+      const stats = p.statsById[wordId] ?? { correct: 0, wrong: 0, lastSeenAt: 0, lastResult: null };
+      const now = Date.now();
+      const nextStats = {
+        ...stats,
+        correct: stats.correct + (isCorrect ? 1 : 0),
+        wrong: stats.wrong + (isCorrect ? 0 : 1),
+        lastSeenAt: now,
+        lastResult: isCorrect ? "richtig" : "falsch",
+      };
+
+      const nextTotal = p.sessions.totalAnswers + 1;
+      const nextCorrect = p.sessions.correctAnswers + (isCorrect ? 1 : 0);
+
+      return {
+        ...p,
+        xp: p.xp + baseXp + speedBonus,
+        masteryById: { ...p.masteryById, [wordId]: nextMastery },
+        statsById: { ...p.statsById, [wordId]: nextStats },
+        sessions: { totalAnswers: nextTotal, correctAnswers: nextCorrect },
+      };
+    });
+
+    setQuizState((qs) => ({
+      ...qs,
+      lastDeltaXp: baseXp + speedBonus,
+      lastMasteryDelta: masteryDelta,
+      lastWordId: wordId,
+    }));
+  };
+
+  const pickFlashList = useMemo(() => {
+    const all = filteredWords.length ? filteredWords : words;
+    const mastered = all.filter((w) => (progress.masteryById[w.id] ?? 0) >= 80);
+    const repeat = all.filter((w) => (progress.masteryById[w.id] ?? 0) < 80);
+
+    if (flashState.mode === "gemeistert") return mastered.length ? mastered : all;
+    if (flashState.mode === "wiederholen") return repeat.length ? repeat : all;
+    return all;
+  }, [filteredWords, words, progress.masteryById, flashState.mode]);
+
+  const flashWord = pickFlashList[clamp(flashState.index, 0, Math.max(0, pickFlashList.length - 1))] ?? null;
+
+  const startQuiz = (type) => {
+    setQuizState((qs) => {
+      const next = {
+        ...qs,
+        running: true,
+        type,
+        current: null,
+        questionId: uid(),
+        selected: null,
+        revealed: false,
+        correct: null,
+        score: 0,
+        total: 0,
+        seed: uid(),
+        lastDeltaXp: 0,
+        lastMasteryDelta: 0,
+        lastWordId: null,
+      };
+      return next;
+    });
+    nextQuestion(type);
+  };
+
+  const buildQuestion = (type) => {
+    const pool = filteredWords.length ? filteredWords : words;
+    const candidates = pool.length >= 4 ? pool : words;
+    const weighted = candidates.map((w) => {
+      const m = progress.masteryById[w.id] ?? 0;
+      const wrong = progress.statsById[w.id]?.wrong ?? 0;
+      const correct = progress.statsById[w.id]?.correct ?? 0;
+      const lastSeenAt = progress.statsById[w.id]?.lastSeenAt ?? 0;
+      const recencyPenalty = Math.min(0.6, (Date.now() - lastSeenAt) / (7 * 24 * 3600 * 1000));
+      const need = (100 - m) / 100;
+      const err = clamp((wrong + 1) / (correct + wrong + 2), 0, 1);
+      const difficultyBoost = (DIFFICULTY_ORDER.indexOf(w.difficulty) + 1) / DIFFICULTY_ORDER.length;
+      const weight = 0.25 + 0.55 * need + 0.15 * err + 0.05 * difficultyBoost + 0.1 * recencyPenalty;
+      return { w, weight };
+    });
+
+    const totalWeight = weighted.reduce((s, x) => s + x.weight, 0);
+    let r = Math.random() * totalWeight;
+    let chosen = weighted[0]?.w ?? (candidates[0] ?? words[0]);
+    for (const x of weighted) {
+      r -= x.weight;
+      if (r <= 0) {
+        chosen = x.w;
+        break;
+      }
+    }
+
+    const distractorPool = candidates.filter((x) => x.id !== chosen.id);
+    const distractors = shuffle(distractorPool).slice(0, 3);
+    const options = shuffle([chosen, ...distractors]).map((w) => ({ id: w.id, label: w.de }));
+
+    return {
+      id: uid(),
+      type,
+      wordId: chosen.id,
+      promptImage: type === 1 ? chosen.image : null,
+      promptAudio: type === 2 ? chosen.de : null,
+      options,
+      answerId: chosen.id,
+      meta: {
+        category: chosen.category,
+        difficulty: chosen.difficulty,
+      },
+    };
+  };
+
+  const nextQuestion = (forceType) => {
+    setQuizState((qs) => {
+      const type = forceType ?? qs.type ?? 1;
+      const q = buildQuestion(type);
+      return {
+        ...qs,
+        running: true,
+        type,
+        current: q,
+        questionId: q.id,
+        selected: null,
+        revealed: false,
+        correct: null,
+      };
+    });
+  };
+
+  const answerQuiz = (optionId) => {
+    setQuizState((qs) => {
+      if (!qs.current || qs.revealed) return qs;
+      const isCorrect = optionId === qs.current.answerId;
+      return {
+        ...qs,
+        selected: optionId,
+        revealed: true,
+        correct: isCorrect,
+        score: qs.score + (isCorrect ? 1 : 0),
+        total: qs.total + 1,
+      };
+    });
+
+    const wordId = quizState.current?.wordId;
+    const answerId = quizState.current?.answerId;
+    const isCorrect = optionId === answerId;
+    if (wordId) awardForAnswer({ wordId, isCorrect, mode: "quiz" });
+  };
+
+  const stopQuiz = () => {
+    setQuizState((qs) => ({
+      ...qs,
+      running: false,
+      current: null,
+      selected: null,
+      revealed: false,
+      correct: null,
+    }));
+    speech.stop();
+  };
+
+  const addWord = ({ de, ar, image, category, difficulty }) => {
+    const newWord = {
+      id: uid(),
+      de: normalize(de),
+      ar: normalize(ar),
+      image: normalize(image),
+      category: normalize(category),
+      difficulty: difficulty,
+      tags: [],
+    };
+
+    setWords((w) => [newWord, ...w]);
+    setProgress((p) => ({
+      ...p,
+      masteryById: { ...p.masteryById, [newWord.id]: 0 },
+      statsById: {
+        ...p.statsById,
+        [newWord.id]: { correct: 0, wrong: 0, lastSeenAt: 0, lastResult: null },
+      },
+    }));
+  };
+
+  const ctx = useMemo(
+    () => ({
+      theme,
+      setTheme,
+      route,
+      setRoute,
+      words,
+      setWords,
+      progress,
+      setProgress,
+      filters,
+      setFilters,
+      categories,
+      difficulties,
+      filteredWords,
+      flashState,
+      setFlashState,
+      flashWord,
+      flashList: pickFlashList,
+      quizState,
+      setQuizState,
+      startQuiz,
+      nextQuestion,
+      answerQuiz,
+      stopQuiz,
+      addWord,
+      speech,
+      level,
+    }),
+    [
+      theme,
+      route,
+      words,
+      progress,
+      filters,
+      categories,
+      difficulties,
+      filteredWords,
+      flashState,
+      flashWord,
+      pickFlashList,
+      quizState,
+      speech,
+      level,
+    ]
+  );
+
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'Arial' }}>
-      <h1>🇩🇪 تطبيق معاذ لتعلم الألماني 🇩🇪</h1>
-      <p>لو شايف الرسالة دي، يبقى الموقع اشتغل يا بطل!</p>
-      <button onClick={() => alert('Guten Tag!')} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-        دوس هنا
-      </button>
+    <AppContext.Provider value={ctx}>
+      <div className={theme === "dark" ? "app dark" : "app light"}>
+        <Style />
+        <TopHeader />
+        <MainLayout />
+      </div>
+    </AppContext.Provider>
+  );
+}
+
+function Style() {
+  const { theme } = useContext(AppContext);
+  return (
+    <style>{`
+      :root {
+        --bg: ${theme === "dark" ? "#0B1020" : "#F7F8FB"};
+        --panel: ${theme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.04)"};
+        --panel2: ${theme === "dark" ? "rgba(255,255,255,0.09)" : "rgba(15,23,42,0.06)"};
+        --text: ${theme === "dark" ? "#EAF0FF" : "#0F172A"};
+        --muted: ${theme === "dark" ? "rgba(234,240,255,0.72)" : "rgba(15,23,42,0.65)"};
+        --muted2: ${theme === "dark" ? "rgba(234,240,255,0.55)" : "rgba(15,23,42,0.55)"};
+        --border: ${theme === "dark" ? "rgba(234,240,255,0.12)" : "rgba(15,23,42,0.12)"};
+        --shadow: ${theme === "dark" ? "0 18px 60px rgba(0,0,0,0.45)" : "0 18px 60px rgba(15,23,42,0.16)"};
+        --green: #22C55E;
+        --red: #EF4444;
+        --yellow: #F59E0B;
+        --blue: #3B82F6;
+        --purple: #8B5CF6;
+        --pink: #EC4899;
+        --teal: #14B8A6;
+        --duo: #58CC02;
+        --duo2: #2EA0FF;
+        --duo3: #FF4B4B;
+        --ring: ${theme === "dark" ? "0 0 0 3px rgba(46,160,255,0.25)" : "0 0 0 3px rgba(46,160,255,0.22)"};
+        --radius: 18px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; padding: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif; }
+      .app { min-height: 100vh; background: radial-gradient(1200px 600px at 10% 0%, rgba(46,160,255,0.18), transparent 60%),
+                                   radial-gradient(1000px 700px at 90% 10%, rgba(88,204,2,0.12), transparent 55%),
+                                   radial-gradient(900px 700px at 60% 90%, rgba(236,72,153,0.10), transparent 55%),
+                                   var(--bg);
+             color: var(--text);
+      }
+
+      a { color: inherit; text-decoration: none; }
+      button, input, select, textarea { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+      ::selection { background: rgba(46,160,255,0.28); }
+
+      .container { max-width: 1200px; margin: 0 auto; padding: 18px 16px 34px; }
+      .topbar {
+        position: sticky; top: 0; z-index: 20;
+        backdrop-filter: blur(14px);
+        background: linear-gradient(to bottom, rgba(0,0,0,0.42), rgba(0,0,0,0.02));
+        border-bottom: 1px solid var(--border);
+      }
+      .topbarInner { max-width: 1200px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .brand { display: flex; align-items: center; gap: 12px; min-width: 260px; }
+      .brandTitle { font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }
+      .brandTitle small { display: block; font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 2px; letter-spacing: 0.02em; }
+      .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+      .pill strong { font-size: 13px; }
+      .pill span { font-size: 13px; color: var(--muted); font-weight: 700; }
+      .pillIcon { width: 18px; height: 18px; opacity: 0.95; }
+
+      .topActions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+      .btn {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        padding: 10px 12px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      }
+      .btn:hover { transform: translateY(-1px); border-color: rgba(46,160,255,0.35); }
+      .btn:active { transform: translateY(0px) scale(0.99); }
+      .btnPrimary {
+        background: linear-gradient(180deg, rgba(88,204,2,0.24), rgba(88,204,2,0.12));
+        border-color: rgba(88,204,2,0.35);
+      }
+      .btnDanger {
+        background: linear-gradient(180deg, rgba(239,68,68,0.24), rgba(239,68,68,0.12));
+        border-color: rgba(239,68,68,0.35);
+      }
+      .btnGhost { background: transparent; border-color: var(--border); }
+      .btnSmall { padding: 8px 10px; border-radius: 12px; font-weight: 850; font-size: 13px; }
+      .btnIconOnly { padding: 10px; border-radius: 14px; }
+      .btn:focus { outline: none; box-shadow: var(--ring); }
+
+      .layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+      @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+      .sidebar {
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--panel2), var(--panel));
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .sideHeader { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .sideHeader h3 { margin: 0; font-size: 14px; letter-spacing: -0.01em; opacity: 0.95; }
+      .nav { padding: 10px; display: grid; gap: 8px; }
+      .navItem {
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: 14px;
+        padding: 12px 12px;
+        background: transparent;
+        border: 1px solid transparent;
+        display: flex; align-items: center; gap: 12px;
+        font-weight: 900;
+        color: var(--muted);
+        transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, color 0.12s ease;
+      }
+      .navItem:hover { background: rgba(46,160,255,0.10); border-color: rgba(46,160,255,0.22); transform: translateY(-1px); color: var(--text); }
+      .navItemActive { background: rgba(88,204,2,0.14); border-color: rgba(88,204,2,0.30); color: var(--text); }
+      .navIcon { width: 18px; height: 18px; }
+
+      .content {
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--panel2), var(--panel));
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .contentHeader { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .contentHeader h2 { margin: 0; letter-spacing: -0.02em; font-size: 18px; }
+      .subText { color: var(--muted); font-weight: 750; font-size: 13px; }
+
+      .grid { padding: 16px; display: grid; gap: 16px; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      @media (max-width: 980px) { .grid2 { grid-template-columns: 1fr; } }
+
+      .card {
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 14px 40px rgba(0,0,0,0.18);
+      }
+      .cardPad { padding: 16px; }
+      .cardTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+      .cardTitle h3 { margin: 0; font-size: 14px; letter-spacing: -0.01em; }
+      .cardTitle .muted { color: var(--muted2); font-weight: 800; font-size: 12px; }
+      .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .spacer { flex: 1; min-width: 10px; }
+      .kpi { display: grid; gap: 6px; }
+      .kpiLabel { color: var(--muted2); font-weight: 800; font-size: 12px; }
+      .kpiValue { font-weight: 950; font-size: 20px; letter-spacing: -0.03em; display: flex; align-items: baseline; gap: 8px; }
+      .kpiValue small { color: var(--muted2); font-weight: 900; font-size: 12px; letter-spacing: 0.02em; }
+
+      .progressBar { width: 100%; height: 12px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); overflow: hidden; }
+      .progressFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(46,160,255,0.85), rgba(88,204,2,0.85)); width: 0%; transition: width 0.25s ease; }
+
+      .tag { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--muted); font-weight: 900; font-size: 12px; }
+      .tag strong { color: var(--text); font-weight: 950; }
+
+      .list { display: grid; gap: 10px; }
+      .wordItem {
+        display: grid;
+        grid-template-columns: 86px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.03);
+      }
+      @media (max-width: 620px) {
+        .wordItem { grid-template-columns: 72px 1fr; grid-template-rows: auto auto; }
+        .wordActions { grid-column: 1 / -1; padding: 0 12px 12px; justify-content: flex-end; }
+      }
+
+      .thumb { width: 86px; height: 86px; object-fit: cover; display: block; }
+      @media (max-width: 620px) { .thumb { width: 72px; height: 72px; } }
+
+      .wordMeta { padding: 12px 0; }
+      .wordDe { font-weight: 1000; letter-spacing: -0.02em; }
+      .wordAr { color: var(--muted); font-weight: 850; margin-top: 4px; }
+      .wordBadges { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+      .badge { font-size: 11px; font-weight: 950; letter-spacing: 0.02em; padding: 6px 8px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--muted); }
+      .badgeGreen { border-color: rgba(88,204,2,0.32); background: rgba(88,204,2,0.10); color: rgba(234,240,255,0.92); }
+      .badgeBlue { border-color: rgba(46,160,255,0.32); background: rgba(46,160,255,0.10); color: rgba(234,240,255,0.92); }
+      .badgeYellow { border-color: rgba(245,158,11,0.32); background: rgba(245,158,11,0.10); color: rgba(234,240,255,0.92); }
+
+      .wordActions { padding: 12px; display: flex; align-items: center; gap: 10px; }
+      .meter { width: 110px; }
+      .meterTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted2); font-weight: 900; font-size: 11px; letter-spacing: 0.02em; margin-bottom: 6px; }
+      .meterBar { height: 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); overflow: hidden; }
+      .meterFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(239,68,68,0.9), rgba(245,158,11,0.85), rgba(88,204,2,0.85)); width: 0%; transition: width 0.25s ease; }
+
+      .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 860px) { .formGrid { grid-template-columns: 1fr; } }
+      .field { display: grid; gap: 6px; }
+      .label { font-size: 12px; font-weight: 950; color: var(--muted); letter-spacing: 0.02em; }
+      .input, .select, .textarea {
+        width: 100%;
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(0,0,0,0.12);
+        outline: none;
+        font-weight: 850;
+        color: var(--text);
+      }
+      .textarea { min-height: 110px; resize: vertical; line-height: 1.3; }
+      .input:focus, .select:focus, .textarea:focus { box-shadow: var(--ring); border-color: rgba(46,160,255,0.40); }
+      .hint { color: var(--muted2); font-size: 12px; font-weight: 800; line-height: 1.35; }
+
+      .flashWrap { display: grid; gap: 12px; }
+      .flashCard {
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      .flashTop { position: relative; }
+      .flashImg { width: 100%; height: 260px; object-fit: cover; display: block; filter: saturate(1.05) contrast(1.03); }
+      @media (max-width: 620px) { .flashImg { height: 220px; } }
+      .flashOverlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.55));
+        display: flex; align-items: flex-end; padding: 14px;
+      }
+      .flashOverlayInner { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; width: 100%; }
+      .flashWord { font-weight: 1000; letter-spacing: -0.03em; font-size: 26px; }
+      .flashSub { color: rgba(234,240,255,0.80); font-weight: 850; }
+      .flashBody { padding: 16px; display: grid; gap: 10px; }
+      .flashRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+      .quizWrap { display: grid; gap: 12px; }
+      .quizPrompt { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: rgba(255,255,255,0.03); }
+      .quizPromptMedia { width: 100%; height: 260px; object-fit: cover; display: block; }
+      .quizPromptBody { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .quizOptions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      @media (max-width: 720px) { .quizOptions { grid-template-columns: 1fr; } }
+      .opt {
+        padding: 14px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        font-weight: 950;
+        letter-spacing: -0.01em;
+        transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      }
+      .opt:hover { transform: translateY(-1px); border-color: rgba(46,160,255,0.38); }
+      .opt:active { transform: translateY(0px) scale(0.99); }
+      .optGood { border-color: rgba(88,204,2,0.45); background: rgba(88,204,2,0.14); }
+      .optBad { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); }
+      .optDim { opacity: 0.70; }
+      .optMark { width: 20px; height: 20px; opacity: 0.95; }
+
+      .teacherBox { display: grid; gap: 14px; }
+      .teacherHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .teacherHeader h3 { margin: 0; font-size: 14px; letter-spacing: -0.01em; }
+      .teacherSpeech { padding: 14px; border-radius: 18px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); line-height: 1.35; font-weight: 850; color: rgba(234,240,255,0.92); }
+      .teacherSpeech strong { font-weight: 1000; }
+      .teacherSpeech .muted { color: var(--muted); font-weight: 850; }
+      .teacherTools { display: flex; gap: 10px; flex-wrap: wrap; }
+      .teacherGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      @media (max-width: 980px) { .teacherGrid { grid-template-columns: 1fr; } }
+
+      .notice { padding: 12px 12px; border-radius: 16px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--muted); font-weight: 850; line-height: 1.35; display: flex; align-items: flex-start; gap: 10px; }
+      .noticeIcon { width: 18px; height: 18px; margin-top: 2px; }
+    `}</style>
+  );
+}
+
+function TopHeader() {
+  const { theme, setTheme, progress, level, route, setRoute } = useContext(AppContext);
+
+  const acc = progress.sessions.totalAnswers
+    ? Math.round((progress.sessions.correctAnswers / progress.sessions.totalAnswers) * 100)
+    : 0;
+
+  return (
+    <div className="topbar">
+      <div className="topbarInner">
+        <div className="brand">
+          <div style={{ fontSize: 26, filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.25))" }}>🇩🇪</div>
+          <div className="brandTitle">
+            Deutsch mit Muaz Ali DKW — AI System
+            <small>Wortschatz · Karten · Quiz · Lehrer · Fortschritt</small>
+          </div>
+        </div>
+
+        <div className="topActions">
+          <div className="pill" title="Fortschritt">
+            <Trophy className="pillIcon" />
+            <strong>{progress.xp} XP</strong>
+            <span>· {level.current.title}</span>
+          </div>
+
+          <div className="pill" title="Serie">
+            <Flame className="pillIcon" />
+            <strong>{progress.streak.count}</strong>
+            <span>· Serie</span>
+          </div>
+
+          <div className="pill" title="Trefferquote">
+            <Swords className="pillIcon" />
+            <strong>{acc}%</strong>
+            <span>· Treffer</span>
+          </div>
+
+          <button
+            className="btn btnSmall btnGhost"
+            onClick={() => setRoute(route === "quiz" ? "dashboard" : "quiz")}
+            title="Quiz"
+          >
+            <Swords className="navIcon" /> Quiz
+          </button>
+
+          <button
+            className="btn btnIconOnly"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Hell" : "Dunkel"}
+          >
+            {theme === "dark" ? <Sun className="navIcon" /> : <Moon className="navIcon" />}
+          </button>
+        </div>
+      </div>
     </div>
   );
+}
+
+function MainLayout() {
+  const { route, setRoute } = useContext(AppContext);
+
+  return (
+    <div className="container">
+      <div className="layout">
+        <aside className="sidebar">
+          <div className="sideHeader">
+            <h3>Modus</h3>
+            <div className="tag">
+              <Sparkles style={{ width: 16, height: 16 }} />
+              <strong>AI</strong>
+              <span>simuliert</span>
+            </div>
+          </div>
+
+          <nav className="nav">
+            <NavButton active={route === "dashboard"} onClick={() => setRoute("dashboard")} icon={LayoutDashboard}>
+              Übersicht
+            </NavButton>
+            <NavButton active={route === "vocab"} onClick={() => setRoute("vocab")} icon={BookOpen}>
+              Wortschatz
+            </NavButton>
+            <NavButton active={route === "flashcards"} onClick={() => setRoute("flashcards")} icon={Repeat2}>
+              Karten
+            </NavButton>
+            <NavButton active={route === "quiz"} onClick={() => setRoute("quiz")} icon={Swords}>
+              Quiz
+            </NavButton>
+            <NavButton active={route === "teacher"} onClick={() => setRoute("teacher")} icon={Brain}>
+              Lehrer
+            </NavButton>
+          </nav>
+
+          <SidebarFooter />
+        </aside>
+
+        <main className="content">
+          {route === "dashboard" && <Dashboard />}
+          {route === "vocab" && <Vocabulary />}
+          {route === "flashcards" && <Flashcards />}
+          {route === "quiz" && <Quiz />}
+          {route === "teacher" && <Teacher />}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function NavButton({ active, onClick, icon: Icon, children }) {
+  return (
+    <button className={active ? "navItem navItemActive" : "navItem"} onClick={onClick}>
+      <Icon className="navIcon" />
+      <div style={{ display: "grid", gap: 2 }}>
+        <div style={{ fontSize: 14 }}>{children}</div>
+      </div>
+    </button>
+  );
+}
+
+function SidebarFooter() {
+  const { filteredWords, words, progress, level } = useContext(AppContext);
+
+  const masteryAvg = useMemo(() => {
+    const ids = words.map((w) => w.id);
+    if (!ids.length) return 0;
+    const sum = ids.reduce((s, id) => s + (progress.masteryById[id] ?? 0), 0);
+    return Math.round(sum / ids.length);
+  }, [words, progress.masteryById]);
+
+  return (
+    <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
+      <div className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
+        <div className="cardPad" style={{ display: "grid", gap: 10 }}>
+          <div className="row">
+            <GraduationCap style={{ width: 18, height: 18, opacity: 0.95 }} />
+            <div style={{ fontWeight: 950, letterSpacing: "-0.01em" }}>Stufe</div>
+            <div className="spacer" />
+            <div className="tag">
+              <strong>{level.current.key}</strong>
+              <span>→</span>
+              <strong>{level.next.key}</strong>
+            </div>
+          </div>
+          <div className="progressBar" aria-label="Level Fortschritt">
+            <div className="progressFill" style={{ width: `${level.pct}%` }} />
+          </div>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="subText">Wörter: {words.length}</div>
+            <div className="subText">Filter: {filteredWords.length}</div>
+          </div>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="subText">Meisterung Ø</div>
+            <div className="tag">
+              <strong>{masteryAvg}%</strong>
+              <span>· Ø</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard() {
+  const { progress, words, level, setRoute, filteredWords } = useContext(AppContext);
+
+  const masteredCount = useMemo(
+    () => words.filter((w) => (progress.masteryById[w.id] ?? 0) >= 80).length,
+    [words, progress.masteryById]
+  );
+
+  const weakCount = useMemo(
+    () => words.filter((w) => (progress.masteryById[w.id] ?? 0) <= 30).length,
+    [words, progress.masteryById]
+  );
+
+  const acc = progress.sessions.totalAnswers
+    ? Math.round((progress.sessions.correctAnswers / progress.sessions.totalAnswers) * 100)
+    : 0;
+
+  const nextTargets = useMemo(() => {
+    const ranked = words
+      .map((w) => {
+        const m = progress.masteryById[w.id] ?? 0;
+        const wrong = progress.statsById[w.id]?.wrong ?? 0;
+        const correct = progress.statsById[w.id]?.correct ?? 0;
+        const lastSeenAt = progress.statsById[w.id]?.lastSeenAt ?? 0;
+        const recency = clamp((Date.now() - lastSeenAt) / (5 * 24 * 3600 * 1000), 0, 1);
+        const need = (100 - m) / 100;
+        const err = clamp((wrong + 1) / (correct + wrong + 2), 0, 1);
+        const score = need * 0.65 + err * 0.25 + recency * 0.10;
+        return { w, score, m };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+    return ranked;
+  }, [words, progress.masteryById, progress.statsById]);
+
+  return (
+    <>
+      <div className="contentHeader">
+        <div>
+          <h2>Übersicht</h2>
+          <div className="subText">XP · Serie · Meisterung · Nächste Ziele</div>
+        </div>
+        <div className="row">
+          <button className="btn btnSmall btnPrimary" onClick={() => setRoute("quiz")}>
+            <Swords className="navIcon" /> Start
+          </button>
+          <button className="btn btnSmall" onClick={() => setRoute("flashcards")}>
+            <Repeat2 className="navIcon" /> Karten
+          </button>
+          <button className="btn btnSmall" onClick={() => setRoute("teacher")}>
+            <Brain className="navIcon" /> Lehrer
+          </button>
+        </div>
+      </div>
+
+      <div className="grid">
+        <div className="grid2">
+          <div className="card">
+            <div className="cardPad">
+              <div className="cardTitle">
+                <h3>Fortschritt</h3>
+                <div className="muted">Stufe {level.current.key}</div>
+              </div>
+              <div className="row" style={{ alignItems: "flex-end", gap: 16 }}>
+                <div className="kpi">
+                  <div className="kpiLabel">XP</div>
+                  <div className="kpiValue">
+                    {progress.xp} <small>gesamt</small>
+                  </div>
+                </div>
+                <div className="kpi">
+                  <div className="kpiLabel">Serie</div>
+                  <div className="kpiValue">
+                    {progress.streak.count} <small>Tage</small>
+                  </div>
+                </div>
+                <div className="kpi">
+                  <div className="kpiLabel">Treffer</div>
+                  <div className="kpiValue">
+                    {acc}% <small>Quote</small>
+                  </div>
+                </div>
+              </div>
+              <div style={{ height: 14 }} />
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <div className="subText">
+                  {level.current.key} → {level.next.key}
+                </div>
+                <div className="subText">{level.pct}%</div>
+              </div>
+              <div className="progressBar">
+                <div className="progressFill" style={{ width: `${level.pct}%` }} />
+              </div>
+              <div style={{ height: 12 }} />
+              <div className="row" style={{ gap: 8 }}>
+                <span className="tag">
+                  <CheckCircle2 style={{ width: 16, height: 16 }} /> <strong>{masteredCount}</strong>{" "}
+                  <span>gemeistert</span>
+                </span>
+                <span className="tag">
+                  <Lightbulb style={{ width: 16, height: 16 }} /> <strong>{weakCount}</strong>{" "}
+                  <span>schwach</span>
+                </span>
+                <span className="tag">
+                  <BookOpen style={{ width: 16, height: 16 }} /> <strong>{filteredWords.length}</strong>{" "}
+                  <span>im Filter</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="cardPad">
+              <div className="cardTitle">
+                <h3>Nächste Ziele</h3>
+                <div className="muted">fokus</div>
+              </div>
+              <div className="list">
+                {nextTargets.map(({ w, m }) => (
+                  <div
+                    key={w.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 10,
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <img
+                      src={w.image}
+                      alt={w.de}
+                      style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 14 }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    <div style={{ display: "grid", gap: 4, flex: 1 }}>
+                      <div style={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>{w.de}</div>
+                      <div className="subText">
+                        {CATEGORY_ICONS[w.category] ?? "📌"} {w.category} · {w.difficulty}
+                      </div>
+                    </div>
+                    <div className="meter" style={{ width: 120 }}>
+                      <div className="meterTop">
+                        <span>Meisterung</span>
+                        <span>{m}%</span>
+                      </div>
+                      <div className="meterBar">
+                        <div className="meterFill" style={{ width: `${m}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ height: 12 }} />
+              <div className="notice">
+                <Sparkles className="noticeIcon" />
+                <div>
+                  <strong>AI-Lehrer</strong> arbeitet mit Fehlern, Meisterung und Wiederholung.{" "}
+                  <span className="muted">Alles lokal, ohne Backend.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <QuickStart />
+      </div>
+    </>
+  );
+}
+
+function QuickStart() {
+  const { startQuiz, setRoute } = useContext(AppContext);
+
+  return (
+    <div className="card">
+      <div className="cardPad">
+        <div className="cardTitle">
+          <h3>Schnellstart</h3>
+          <div className="muted">Duolingo-Stil</div>
+        </div>
+
+        <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+          <button
+            className="btn btnPrimary"
+            onClick={() => {
+              setRoute("quiz");
+              startQuiz(1);
+            }}
+          >
+            <ImageIcon className="navIcon" /> Bild-Quiz
+          </button>
+
+          <button
+            className="btn btnPrimary"
+            onClick={() => {
+              setRoute("quiz");
+              startQuiz(2);
+            }}
+          >
+            <Headphones className="navIcon" /> Audio-Quiz
+          </button>
+
+          <button className="btn" onClick={() => setRoute("flashcards")}>
+            <Repeat2 className="navIcon" /> Karten-Training
+          </button>
+
+          <button className="btn" onClick={() => setRoute("vocab")}>
+            <BookOpen className="navIcon" /> Wörter verwalten
+          </button>
+
+          <button className="btn" onClick={() => setRoute("teacher")}>
+            <Brain className="navIcon" /> Lehrer-Chat
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Vocabulary() {
+  const { filteredWords, filters, setFilters, categories, difficulties, progress, speech } = useContext(AppContext);
+
+  return (
+    <>
+      <div className="contentHeader">
+        <div>
+          <h2>Wortschatz</h2>
+          <div className="subText">Deutsch · Arabisch · Bild · Kategorie · Niveau</div>
+        </div>
+        <div className="row">
+          <span className="tag">
+            <BookOpen style={{ width: 16, height: 16 }} />
+            <strong>{filteredWords.length}</strong>
+            <span>Wörter</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="grid">
+        <VocabularyControls
+          filters={filters}
+          setFilters={setFilters}
+          categories={categories}
+          difficulties={difficulties}
+        />
+
+        <AddWordCard />
+
+        <div className="card">
+          <div className="cardPad">
+            <div className="cardTitle">
+              <h3>Liste</h3>
+              <div className="muted">Tip: hören + wiederholen</div>
+            </div>
+
+            <div className="list">
+              {filteredWords.map((w) => {
+                const m = progress.masteryById[w.id] ?? 0;
+                const mastered = m >= 80;
+                const badgeClass = mastered ? "badge badgeGreen" : m >= 40 ? "badge badgeYellow" : "badge badgeBlue";
+                return (
+                  <div className="wordItem" key={w.id}>
+                    <img className="thumb" src={w.image} alt={w.de} />
+                    <div className="wordMeta">
+                      <div className="wordDe">{w.de}</div>
+                      <div className="wordAr">{w.ar}</div>
+                      <div className="wordBadges">
+                        <span className="badge">{CATEGORY_ICONS[w.category] ?? "📌"} {w.category}</span>
+                        <span className={badgeClass}>{w.difficulty}</span>
+                        {mastered && <span className="badge badgeGreen">gemeistert</span>}
+                      </div>
+                    </div>
+                    <div className="wordActions">
+                      <div className="meter">
+                        <div className="meterTop">
+                          <span>Meisterung</span>
+                          <span>{m}%</span>
+                        </div>
+                        <div className="meterBar">
+                          <div className="meterFill" style={{ width: `${m}%` }} />
+                        </div>
+                      </div>
+                      <button
+                        className="btn btnSmall"
+                        onClick={() => speech.speak(w.de, { lang: "de-DE", rate: 0.96 })}
+                        title="Hören"
+                      >
+                        <Volume2 className="navIcon" /> Hören
+                      </button>
+                      <button className="btn btnSmall btnGhost" onClick={() => speech.stop()} title="Stop">
+                        <XCircle className="navIcon" /> Stop
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {!filteredWords.length && (
+                <div className="notice">
+                  <Lightbulb className="noticeIcon" />
+                  <div>
+                    Keine Treffer. Filter ändern oder neues Wort hinzufügen.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function VocabularyControls({ filters, setFilters, categories, difficulties }) {
+  return (
+    <div className="card">
+      <div className="cardPad">
+        <div className="cardTitle">
+          <h3>Filter</h3>
+          <div className="muted">schnell</div>
+        </div>
+
+        <div className="formGrid">
+          <div className="field">
+            <div className="label">Suche</div>
+            <input
+              className="input"
+              value={filters.query}
+              onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+              placeholder="z.B. Apfel, Katze, Reisen …"
+            />
+            <div className="hint">Deutsch oder Arabisch möglich. Optionen im Quiz bleiben nur Deutsch.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Kategorie</div>
+            <select
+              className="select"
+              value={filters.category}
+              onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c === "Alle" ? "Alle" : `${CATEGORY_ICONS[c] ?? "📌"} ${c}`}
+                </option>
+              ))}
+            </select>
+            <div className="hint">Kategorien dienen auch als Lernpfad.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Niveau</div>
+            <select
+              className="select"
+              value={filters.difficulty}
+              onChange={(e) => setFilters((f) => ({ ...f, difficulty: e.target.value }))}
+            >
+              {difficulties.map((d) => (
+                <option key={d} value={d}>
+                  {d === "Alle" ? "Alle" : d}
+                </option>
+              ))}
+            </select>
+            <div className="hint">A1–B2 Simulation.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Reset</div>
+            <button
+              className="btn"
+              onClick={() =>
+                setFilters({
+                  category: "Alle",
+                  difficulty: "Alle",
+                  query: "",
+                })
+              }
+            >
+              <Repeat2 className="navIcon" /> Zurücksetzen
+            </button>
+            <div className="hint">Schnell zurück zu allen Wörtern.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddWordCard() {
+  const { addWord, categories } = useContext(AppContext);
+  const [form, setForm] = useState({
+    de: "",
+    ar: "",
+    image: "",
+    category: categories.includes("Alltag") ? "Alltag" : "Alltag",
+    difficulty: "A1",
+  });
+
+  const [status, setStatus] = useState({ type: "idle", message: "" });
+
+  const validateImageUrl = (url) => {
+    try {
+      const u = new URL(url);
+      return ["http:", "https:"].includes(u.protocol);
+    } catch {
+      return false;
+    }
+  };
+
+  const submit = () => {
+    const de = normalize(form.de);
+    const ar = normalize(form.ar);
+    const image = normalize(form.image);
+    const category = normalize(form.category);
+    const difficulty = form.difficulty;
+
+    if (!de || !ar || !image || !category || !difficulty) {
+      setStatus({ type: "error", message: "Bitte alle Felder ausfüllen." });
+      return;
+    }
+    if (!validateImageUrl(image)) {
+      setStatus({ type: "error", message: "Bild-URL ungültig." });
+      return;
+    }
+    if (!DIFFICULTY_ORDER.includes(difficulty)) {
+      setStatus({ type: "error", message: "Niveau ungültig." });
+      return;
+    }
+
+    addWord({ de, ar, image, category, difficulty });
+    setStatus({ type: "ok", message: "Wort hinzugefügt." });
+    setForm((f) => ({ ...f, de: "", ar: "", image: "" }));
+    setTimeout(() => setStatus({ type: "idle", message: "" }), 1400);
+  };
+
+  return (
+    <div className="card">
+      <div className="cardPad">
+        <div className="cardTitle">
+          <h3>Neues Wort</h3>
+          <div className="muted">dynamisch</div>
+        </div>
+
+        <div className="formGrid">
+          <div className="field">
+            <div className="label">Deutsch</div>
+            <input
+              className="input"
+              value={form.de}
+              onChange={(e) => setForm((f) => ({ ...f, de: e.target.value }))}
+              placeholder="z.B. der Käse"
+            />
+            <div className="hint">Artikel + Nomen empfohlen.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Arabisch</div>
+            <input
+              className="input"
+              value={form.ar}
+              onChange={(e) => setForm((f) => ({ ...f, ar: e.target.value }))}
+              placeholder="مثلاً: جبن"
+            />
+            <div className="hint">Nur Übersetzung. Quiz-Optionen bleiben nur Deutsch.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Bild-URL</div>
+            <input
+              className="input"
+              value={form.image}
+              onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+              placeholder="https://images.unsplash.com/…"
+            />
+            <div className="hint">Echte URL, Bedeutung klar.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Kategorie</div>
+            <input
+              className="input"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              placeholder="Alltag"
+            />
+            <div className="hint">Z.B. Alltag, Essen, Reisen, Tiere …</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Niveau</div>
+            <select
+              className="select"
+              value={form.difficulty}
+              onChange={(e) => setForm((f) => ({ ...f, difficulty: e.target.value }))}
+            >
+              {DIFFICULTY_ORDER.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <div className="hint">A1–B2 Simulation.</div>
+          </div>
+
+          <div className="field">
+            <div className="label">Aktion</div>
+            <button className="btn btnPrimary" onClick={submit}>
+              <Plus className="navIcon" /> Hinzufügen
+            </button>
+            {status.type !== "idle" && (
+              <div className="hint" style={{ color: status.type === "ok" ? "rgba(88,204,2,0.95)" : "rgba(239,68,68,0.95)" }}>
+                {status.message}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Flashcards() {
+  const { flashWord, flashState, setFlashState, flashList, progress, speech } = useContext(AppContext);
+
+  const currentIndex = clamp(flashState.index, 0, Math.max(0, flashList.length - 1));
+  const current = flashWord;
+
+  const mark = (kind) => {
+    if (!current) return;
+    if (kind === "mastered") {
+      // simulate: mark as correct with bonus
+      awardFlash(current.id, true);
+    } else {
+      awardFlash(current.id, false);
+    }
+    setFlashState((s) => ({ ...s, index: clamp(s.index + 1, 0, Math.max(0, flashList.length - 1)) }));
+  };
+
+  const awardFlash = (wordId, isCorrect) => {
+    // flash uses same engine but smaller deltas to simulate spaced repetition
+    const baseXp = isCorrect ? 8 : 3;
+    const masteryDelta = isCorrect ? 10 : -6;
+
+    // streak + mastery + stats
+    // implemented here to keep logic strict and self-contained
+    const studyDayKey = (() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    })();
+
+    // local helper: keep SpeechSynthesis clean while interacting
+    speech.stop();
+
+    // update progress
+    const { setProgress } = useContext(AppContext);
+    setProgress((p) => {
+      const last = p.streak.lastStudyDay;
+      let nextStreak = p.streak;
+      if (last !== studyDayKey) {
+        if (!last) nextStreak = { count: 1, lastStudyDay: studyDayKey };
+        else {
+          const lastDate = new Date(last + "T00:00:00");
+          const todayDate = new Date(studyDayKey + "T00:00:00");
+          const diffDays = Math.round((todayDate.getTime() - lastDate.getTime()) / (24 * 3600 * 1000));
+          nextStreak = diffDays === 1 ? { count: p.streak.count + 1, lastStudyDay: studyDayKey } : { count: 1, lastStudyDay: studyDayKey };
+        }
+      }
+
+      const prevMastery = p.masteryById[wordId] ?? 0;
+      const nextMastery = clamp(prevMastery + masteryDelta, 0, 100);
+
+      const stats = p.statsById[wordId] ?? { correct: 0, wrong: 0, lastSeenAt: 0, lastResult: null };
+      const now = Date.now();
+      const nextStats = {
+        ...stats,
+        correct: stats.correct + (isCorrect ? 1 : 0),
+        wrong: stats.wrong + (isCorrect ? 0 : 1),
+        lastSeenAt: now,
+        lastResult: isCorrect ? "richtig" : "falsch",
+      };
+
+      const nextTotal = p.sessions.totalAnswers + 1;
+      const nextCorrect = p.sessions.correctAnswers + (isCorrect ? 1 : 0);
+
+      return {
+        ...p,
+        xp: p.xp + baseXp,
+        streak: nextStreak,
+        masteryById: { ...p.masteryById, [wordId]: nextMastery },
+        statsById: { ...p.statsById, [wordId]: nextStats },
+        sessions: { totalAnswers: nextTotal, correctAnswers: nextCorrect },
+      };
+    });
+  };
+
+  const mastery = current ? progress.masteryById[current.id] ?? 0 : 0;
+
+  return (
+    <>
+      <div className="contentHeader">
+        <div>
+          <h2>Karten</h2>
+          <div className="subText">Bild · Wort · Übersetzung · Wiederholung</div>
+        </div>
+
+        <div className="row">
+          <span className="tag">
+            <Repeat2 style={{ width: 16, height: 16 }} />
+            <strong>{flashList.length}</strong>
+            <span>Karten</span>
+          </span>
+
+          <select
+            className="select"
+            style={{ width: 190 }}
+            value={flashState.mode}
+            onChange={(e) => setFlashState((s) => ({ ...s, mode: e.target.value, index: 0 }))}
+          >
+            <option value="alle">alle</option>
+            <option value="wiederholen">wiederholen</option>
+            <option value="gemeistert">gemeistert</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid">
+        {!current ? (
+          <div className="notice">
+            <Lightbulb className="noticeIcon" />
+            <div>Keine Karten verfügbar.</div>
+          </div>
+        ) : (
+          <div className="flashWrap">
+            <div className="flashCard">
+              <div className="flashTop">
+                <img className="flashImg" src={current.image} alt={current.de} />
+                <div className="flashOverlay">
+                  <div className="flashOverlayInner">
+                    <div>
+                      <div className="flashWord">{current.de}</div>
+                      <div className="flashSub">
+                        {CATEGORY_ICONS[current.category] ?? "📌"} {current.category} · {current.difficulty}
+                      </div>
+                    </div>
+                    <div className="row">
+                      <button
+                        className="btn btnSmall"
+                        onClick={() => speech.speak(current.de, { lang: "de-DE", rate: 0.96 })}
+                        title="Hören"
+                      >
+                        <Volume2 className="navIcon" /> Hören
+                      </button>
+                      <button className="btn btnSmall btnGhost" onClick={() => speech.stop()} title="Stop">
+                        <XCircle className="navIcon" /> Stop
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flashBody">
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <div className="tag">
+                    <strong>{currentIndex + 1}</strong>
+                    <span>/</span>
+                    <strong>{flashList.length}</strong>
+                  </div>
+
+                  <div className="tag">
+                    <strong>{mastery}%</strong>
+                    <span>Meisterung</span>
+                  </div>
+                </div>
+
+                <div className="teacherSpeech">
+                  <strong>Übersetzung:</strong> <span className="muted">{current.ar}</span>
+                </div>
+
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <div className="row">
+                    <button
+                      className="btn"
+                      onClick={() => setFlashState((s) => ({ ...s, index: clamp(s.index - 1, 0, flashList.length - 1) }))}
+                      disabled={currentIndex <= 0}
+                      style={{ opacity: currentIndex <= 0 ? 0.55 : 1 }}
+                    >
+                      <ChevronLeft className="navIcon" /> Zurück
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => setFlashState((s) => ({ ...s, index: clamp(s.index + 1, 0, flashList.length - 1) }))}
+                      disabled={currentIndex >= flashList.length - 1}
+                      style={{ opacity: currentIndex >= flashList.length - 1 ? 0.55 : 1 }}
+                    >
+                      Weiter <ChevronRight className="navIcon" />
+                    </button>
+                  </div>
+
+                  <div className="row">
+                    <button className="btn btnDanger" onClick={() => mark("repeat")}>
+                      <Repeat2 className="navIcon" /> Wiederholen
+                    </button>
+                    <button className="btn btnPrimary" onClick={() => mark("mastered")}>
+                      <CheckCircle2 className="navIcon" /> Gemeistert
+                    </button>
+                  </div>
+                </div>
+
+                <div className="notice">
+                  <Sparkles className="noticeIcon" />
+                  <div>
+                    Simulation: <strong>Gemeistert</strong> erhöht Meisterung stark, <strong>Wiederholen</strong> senkt leicht.
+                    XP wird vergeben.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function Quiz() {
+  const { quizState, startQuiz, answerQuiz, nextQuestion, stopQuiz, speech, progress, words } = useContext(AppContext);
+
+  const currentWord = useMemo(() => {
+    const id = quizState.current?.wordId;
+    if (!id) return null;
+    return words.find((w) => w.id === id) ?? null;
+  }, [quizState.current, words]);
+
+  const lastWord = useMemo(() => {
+    const id = quizState.lastWordId;
+    if (!id) return null;
+    return words.find((w) => w.id === id) ?? null;
+  }, [quizState.lastWordId, words]);
+
+  const mastery = currentWord ? progress.masteryById[currentWord.id] ?? 0 : 0;
+
+  const revealBanner = useMemo(() => {
+    if (!quizState.revealed) return null;
+    return quizState.correct
+      ? { text: "Richtig!", tone: "good" }
+      : { text: "Falsch!", tone: "bad" };
+  }, [quizState.revealed, quizState.correct]);
+
+  const playPromptAudio = () => {
+    if (!quizState.current) return;
+    const t = quizState.current.type;
+    if (t !== 2) return;
+    speech.speak(quizState.current.promptAudio ?? "", { lang: "de-DE", rate: 0.96 });
+  };
+
+  return (
+    <>
+      <div className="contentHeader">
+        <div>
+          <h2>Quiz</h2>
+          <div className="subText">Nur Deutsch in Optionen · 4 Optionen · sofortiges Feedback</div>
+        </div>
+
+        <div className="row">
+          {!quizState.running ? (
+            <>
+              <button className="btn btnPrimary" onClick={() => startQuiz(1)}>
+                <ImageIcon className="navIcon" /> Bild-Quiz
+              </button>
+              <button className="btn btnPrimary" onClick={() => startQuiz(2)}>
+                <Headphones className="navIcon" /> Audio-Quiz
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="tag">
+                <Swords style={{ width: 16, height: 16 }} />
+                <strong>{quizState.score}</strong>
+                <span>/</span>
+                <strong>{quizState.total}</strong>
+              </span>
+              <button className="btn btnDanger" onClick={stopQuiz}>
+                <XCircle className="navIcon" /> Stop
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid">
+        {!quizState.running || !quizState.current ? (
+          <div className="card">
+            <div className="cardPad">
+              <div className="notice">
+                <Sparkles className="noticeIcon" />
+                <div>
+                  Start: <strong>Bild-Quiz</strong> oder <strong>Audio-Quiz</strong>. Optionen bleiben nur Deutsch.
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="quizWrap">
+            <div className="quizPrompt">
+              {quizState.current.type === 1 ? (
+                <img className="quizPromptMedia" src={quizState.current.promptImage} alt="Bild" />
+              ) : (
+                <div
+                  style={{
+                    height: 260,
+                    display: "grid",
+                    placeItems: "center",
+                    padding: 16,
+                    background:
+                      "radial-gradient(900px 280px at 50% 10%, rgba(46,160,255,0.22), transparent 65%), rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 10, justifyItems: "center" }}>
+                    <div style={{ fontWeight: 1000, letterSpacing: "-0.02em", fontSize: 18 }}>
+                      Audio hören
+                    </div>
+                    <button className="btn btnPrimary" onClick={playPromptAudio}>
+                      <Volume2 className="navIcon" /> Abspielen
+                    </button>
+                    <button className="btn btnSmall btnGhost" onClick={() => speech.stop()}>
+                      <XCircle className="navIcon" /> Stop
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="quizPromptBody">
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div className="subText">
+                    Typ {quizState.current.type} · {quizState.current.meta.category} · {quizState.current.meta.difficulty}
+                  </div>
+                  <div style={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>
+                    {quizState.current.type === 1 ? "Welches Wort passt zum Bild?" : "Welches Wort hörst du?"}
+                  </div>
+                </div>
+
+                <div className="row" style={{ gap: 8 }}>
+                  <span className="tag">
+                    <strong>{mastery}%</strong>
+                    <span>Meisterung</span>
+                  </span>
+                  {revealBanner && (
+                    <span
+                      className="tag"
+                      style={{
+                        borderColor:
+                          revealBanner.tone === "good"
+                            ? "rgba(88,204,2,0.45)"
+                            : "rgba(239,68,68,0.45)",
+                        background:
+                          revealBanner.tone === "good"
+                            ? "rgba(88,204,2,0.12)"
+                            : "rgba(239,68,68,0.10)",
+                        color: "rgba(234,240,255,0.92)",
+                      }}
+                    >
+                      {revealBanner.tone === "good" ? (
+                        <CheckCircle2 style={{ width: 16, height: 16 }} />
+                      ) : (
+                        <XCircle style={{ width: 16, height: 16 }} />
+                      )}
+                      <strong>{revealBanner.text}</strong>
+                      <span>
+                        +{quizState.lastDeltaXp} XP · {quizState.lastMasteryDelta > 0 ? "+" : ""}
+                        {quizState.lastMasteryDelta}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="quizOptions">
+              {quizState.current.options.map((opt) => {
+                const isSelected = quizState.selected === opt.id;
+                const isAnswer = quizState.current.answerId === opt.id;
+
+                let cls = "opt";
+                let mark = null;
+
+                if (quizState.revealed) {
+                  if (isAnswer) {
+                    cls += " optGood";
+                    mark = <CheckCircle2 className="optMark" />;
+                  } else if (isSelected && !isAnswer) {
+                    cls += " optBad";
+                    mark = <XCircle className="optMark" />;
+                  } else {
+                    cls += " optDim";
+                  }
+                }
+
+                return (
+                  <button
+                    key={opt.id}
+                    className={cls}
+                    onClick={() => {
+                      if (!quizState.revealed) answerQuiz(opt.id);
+                    }}
+                    disabled={quizState.revealed}
+                    title="Antwort wählen"
+                  >
+                    <span>{opt.label}</span>
+                    {mark}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <div className="row" style={{ gap: 10 }}>
+                {quizState.current.type === 2 && (
+                  <>
+                    <button className="btn" onClick={playPromptAudio}>
+                      <Volume2 className="navIcon" /> Nochmal
+                    </button>
+                    <button className="btn btnGhost" onClick={() => speech.stop()}>
+                      <XCircle className="navIcon" /> Stop
+                    </button>
+                  </>
+                )}
+                {quizState.revealed && currentWord && (
+                  <button
+                    className="btn"
+                    onClick={() => speech.speak(currentWord.de, { lang: "de-DE", rate: 0.96 })}
+                    title="Wort hören"
+                  >
+                    <Volume2 className="navIcon" /> Wort hören
+                  </button>
+                )}
+              </div>
+
+              <div className="row">
+                <button
+                  className="btn btnPrimary"
+                  onClick={() => {
+                    speech.stop();
+                    nextQuestion(quizState.type);
+                    if (quizState.type === 2) {
+                      setTimeout(() => playPromptAudio(), 250);
+                    }
+                  }}
+                  disabled={!quizState.revealed}
+                  style={{ opacity: quizState.revealed ? 1 : 0.55 }}
+                >
+                  Weiter <ChevronRight className="navIcon" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid2">
+              <div className="card">
+                <div className="cardPad">
+                  <div className="cardTitle">
+                    <h3>Regeln</h3>
+                    <div className="muted">strict</div>
+                  </div>
+                  <div className="notice">
+                    <Swords className="noticeIcon" />
+                    <div>
+                      Optionen: <strong>nur Deutsch</strong>. Immer <strong>4</strong> Optionen. Reihenfolge zufällig. Feedback sofort.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="cardPad">
+                  <div className="cardTitle">
+                    <h3>Letztes Wort</h3>
+                    <div className="muted">Kontext</div>
+                  </div>
+                  {lastWord ? (
+                    <div className="row" style={{ gap: 12, alignItems: "center" }}>
+                      <img
+                        src={lastWord.image}
+                        alt={lastWord.de}
+                        style={{ width: 78, height: 78, objectFit: "cover", borderRadius: 16 }}
+                      />
+                      <div style={{ display: "grid", gap: 6, flex: 1 }}>
+                        <div style={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>{lastWord.de}</div>
+                        <div className="subText">
+                          {CATEGORY_ICONS[lastWord.category] ?? "📌"} {lastWord.category} · {lastWord.difficulty}
+                        </div>
+                        <div className="subText">Übersetzung: {lastWord.ar}</div>
+                      </div>
+                      <button
+                        className="btn btnSmall"
+                        onClick={() => speech.speak(lastWord.de, { lang: "de-DE", rate: 0.96 })}
+                      >
+                        <Volume2 className="navIcon" /> Hören
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="notice">
+                      <Lightbulb className="noticeIcon" />
+                      <div>Noch kein Wort.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function Teacher() {
+  const { words, progress, speech } = useContext(AppContext);
+
+  const [input, setInput] = useState("");
+  const [mode, setMode] = useState("korrektur"); // korrektur | beispiele | hinweis
+  const [result, setResult] = useState(null);
+
+  const weakWords = useMemo(() => {
+    return words
+      .map((w) => ({ w, m: progress.masteryById[w.id] ?? 0 }))
+      .sort((a, b) => a.m - b.m)
+      .slice(0, 6)
+      .map((x) => x.w);
+  }, [words, progress.masteryById]);
+
+  const analyze = () => {
+    const text = normalize(input);
+    const analysis = teacherEngine(text, words);
+    const output = teacherRespond(analysis, mode);
+    setResult({ analysis, output });
+    if (output?.speak) {
+      speech.speak(output.speak, { lang: "de-DE", rate: 0.96 });
+    }
+  };
+
+  const quickFill = (w) => {
+    const article = parseArticle(w.de);
+    const noun = stripArticle(w.de);
+    if (noun && article) setInput(`Ich habe ${article} ${noun}.`);
+    else if (noun) setInput(`Ich habe ${noun}.`);
+    else setInput(`Ich lerne ${w.de}.`);
+  };
+
+  return (
+    <>
+      <div className="contentHeader">
+        <div>
+          <h2>Lehrer</h2>
+          <div className="subText">Korrektur · Beispiele (A1) · Hinweise · Fehlerlogik</div>
+        </div>
+        <div className="row">
+          <span className="tag">
+            <Brain style={{ width: 16, height: 16 }} />
+            <strong>AI</strong>
+            <span>simuliert</span>
+          </span>
+          <button className="btn btnSmall btnGhost" onClick={() => speech.stop()}>
+            <XCircle className="navIcon" /> Stop
+          </button>
+        </div>
+      </div>
+
+      <div className="grid">
+        <div className="teacherGrid">
+          <div className="card">
+            <div className="cardPad">
+              <div className="teacherHeader">
+                <h3>Eingabe</h3>
+                <div className="row">
+                  <select className="select" style={{ width: 180 }} value={mode} onChange={(e) => setMode(e.target.value)}>
+                    <option value="korrektur">Korrektur</option>
+                    <option value="beispiele">Beispiele</option>
+                    <option value="hinweis">Hinweis</option>
+                  </select>
+                  <button className="btn btnPrimary" onClick={analyze}>
+                    <Sparkles className="navIcon" /> Prüfen
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                className="textarea"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Schreibe einen kurzen Satz (A1)… z.B. Ich habe der Apfel."
+              />
+
+              <div style={{ height: 10 }} />
+              <div className="notice">
+                <Lightbulb className="noticeIcon" />
+                <div>
+                  Fokus: Artikel, einfache Wortstellung, häufige A1-Muster. Wörter aus dem Wortschatz werden erkannt.
+                </div>
+              </div>
+
+              <div style={{ height: 12 }} />
+              <div className="teacherHeader">
+                <h3>Schwache Wörter</h3>
+                <div className="subText">schnell</div>
+              </div>
+              <div className="row" style={{ gap: 10 }}>
+                {weakWords.map((w) => (
+                  <button key={w.id} className="btn btnSmall" onClick={() => quickFill(w)}>
+                    {CATEGORY_ICONS[w.category] ?? "📌"} {stripArticle(w.de) || w.de}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="cardPad">
+              <div className="teacherHeader">
+                <h3>Antwort</h3>
+                <div className="row teacherTools">
+                  {result?.output?.listenText && (
+                    <button
+                      className="btn btnSmall"
+                      onClick={() => speech.speak(result.output.listenText, { lang: "de-DE", rate: 0.96 })}
+                    >
+                      <Volume2 className="navIcon" /> Hören
+                    </button>
+                  )}
+                  {result?.output?.example && (
+                    <button
+                      className="btn btnSmall btnGhost"
+                      onClick={() => speech.speak(result.output.example, { lang: "de-DE", rate: 0.96 })}
+                    >
+                      <Volume2 className="navIcon" /> Beispiel hören
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!result ? (
+                <div className="notice">
+                  <Sparkles className="noticeIcon" />
+                  <div>Schreibe einen Satz und klicke „Prüfen“.</div>
+                </div>
+              ) : (
+                <TeacherResult result={result} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <TeacherLegend />
+      </div>
+    </>
+  );
+}
+
+function TeacherResult({ result }) {
+  const { analysis, output } = result;
+
+  return (
+    <div className="teacherBox">
+      <div
+        className="teacherSpeech"
+        style={{
+          borderColor:
+            analysis.severity === "ok"
+              ? "rgba(88,204,2,0.35)"
+              : analysis.severity === "warn"
+              ? "rgba(245,158,11,0.35)"
+              : "rgba(239,68,68,0.35)",
+          background:
+            analysis.severity === "ok"
+              ? "rgba(88,204,2,0.10)"
+              : analysis.severity === "warn"
+              ? "rgba(245,158,11,0.08)"
+              : "rgba(239,68,68,0.08)",
+        }}
+      >
+        <div style={{ display: "grid", gap: 8 }}>
+          <div>
+            <strong>{output.title}</strong> <span className="muted">· {output.tone}</span>
+          </div>
+          <div>{output.message}</div>
+        </div>
+      </div>
+
+      {output.correction && (
+        <div className="teacherSpeech">
+          <strong>Korrektur:</strong> <span className="muted">{output.correction}</span>
+        </div>
+      )}
+
+      {output.explanation && (
+        <div className="teacherSpeech">
+          <strong>Erklärung:</strong> <span className="muted">{output.explanation}</span>
+        </div>
+      )}
+
+      {output.hint && (
+        <div className="teacherSpeech">
+          <strong>Hinweis:</strong> <span className="muted">{output.hint}</span>
+        </div>
+      )}
+
+      {output.example && (
+        <div className="teacherSpeech">
+          <strong>Beispiel (A1):</strong> <span className="muted">{output.example}</span>
+        </div>
+      )}
+
+      {analysis.detectedWords?.length > 0 && (
+        <div className="notice">
+          <BookOpen className="noticeIcon" />
+          <div>
+            Erkannt:{" "}
+            <strong>
+              {analysis.detectedWords.map((w) => w.de).slice(0, 6).join(" · ")}
+            </strong>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeacherLegend() {
+  return (
+    <div className="card">
+      <div className="cardPad">
+        <div className="cardTitle">
+          <h3>Lehrer-System</h3>
+          <div className="muted">Logik</div>
+        </div>
+
+        <div className="grid2">
+          <div className="notice">
+            <CheckCircle2 className="noticeIcon" />
+            <div>
+              <strong>Korrektur</strong>: Artikel (der/die/das), einfache Muster, typische A1-Fehler.
+            </div>
+          </div>
+
+          <div className="notice">
+            <Lightbulb className="noticeIcon" />
+            <div>
+              <strong>Hinweis</strong>: schrittweise, ohne Lösung direkt zu spoilern, mit Fokus auf Artikel/Verb.
+            </div>
+          </div>
+
+          <div className="notice">
+            <Sparkles className="noticeIcon" />
+            <div>
+              <strong>Beispiele</strong>: kurze A1-Sätze mit Wörtern aus dem Wortschatz.
+            </div>
+          </div>
+
+          <div className="notice">
+            <Brain className="noticeIcon" />
+            <div>
+              <strong>Fehlererkennung</strong>: Muster + Wortschatzabgleich + Heuristik (Artikel, Verbform, Wortstellung).
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Speech Synthesis (de-DE), stop previous audio before new one */
+function useSpeechSynthesis() {
+  const utterRef = useRef(null);
+  const [state, setState] = useState({ speaking: false, lastText: "" });
+
+  const pickVoice = (lang) => {
+    const voices = window.speechSynthesis?.getVoices?.() ?? [];
+    const target = (lang || "de-DE").toLowerCase();
+    const exact = voices.find((v) => (v.lang || "").toLowerCase() === target);
+    if (exact) return exact;
+    const prefix = target.split("-")[0];
+    const byPrefix = voices.find((v) => (v.lang || "").toLowerCase().startsWith(prefix));
+    return byPrefix || null;
+  };
+
+  const stop = () => {
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch {}
+    utterRef.current = null;
+    setState((s) => ({ ...s, speaking: false }));
+  };
+
+  const speak = (text, opts = {}) => {
+    const t = normalize(text);
+    if (!t) return;
+
+    stop();
+
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = opts.lang || "de-DE";
+    u.rate = typeof opts.rate === "number" ? clamp(opts.rate, 0.6, 1.2) : 1.0;
+    u.pitch = typeof opts.pitch === "number" ? clamp(opts.pitch, 0.7, 1.2) : 1.0;
+    u.volume = typeof opts.volume === "number" ? clamp(opts.volume, 0.0, 1.0) : 1.0;
+
+    const voice = pickVoice(u.lang);
+    if (voice) u.voice = voice;
+
+    u.onstart = () => setState({ speaking: true, lastText: t });
+    u.onend = () => setState((s) => ({ ...s, speaking: false }));
+    u.onerror = () => setState((s) => ({ ...s, speaking: false }));
+
+    utterRef.current = u;
+    try {
+      window.speechSynthesis.speak(u);
+    } catch {
+      setState((s) => ({ ...s, speaking: false }));
+    }
+  };
+
+  return { ...state, speak, stop };
+}
+
+/** Teacher engine (simulated logic) */
+function parseArticle(deWord) {
+  const s = toLowerDe(deWord);
+  if (s.startsWith("der ")) return "der";
+  if (s.startsWith("die ")) return "die";
+  if (s.startsWith("das ")) return "das";
+  return null;
+}
+
+function stripArticle(deWord) {
+  const s = normalize(deWord);
+  const low = toLowerDe(s);
+  if (low.startsWith("der ")) return s.slice(4);
+  if (low.startsWith("die ")) return s.slice(4);
+  if (low.startsWith("das ")) return s.slice(4);
+  return s;
+}
+
+function teacherEngine(text, words) {
+  const t = normalize(text);
+
+  const vocabIndex = words.map((w) => ({
+    id: w.id,
+    de: normalize(w.de),
+    deLow: toLowerDe(w.de),
+    bare: normalize(stripArticle(w.de)),
+    bareLow: toLowerDe(stripArticle(w.de)),
+    article: parseArticle(w.de),
+    category: w.category,
+    difficulty: w.difficulty,
+  }));
+
+  const detectedWords = [];
+  const textLow = toLowerDe(t);
+
+  for (const v of vocabIndex) {
+    if (!v.bareLow) continue;
+    const re = new RegExp(`\\b${escapeRegExp(v.bareLow)}\\b`, "i");
+    if (re.test(textLow) || new RegExp(`\\b${escapeRegExp(v.deLow)}\\b`, "i").test(textLow)) {
+      const w = words.find((x) => x.id === v.id);
+      if (w) detectedWords.push(w);
+    }
+  }
+
+  const issues = [];
+
+  // A1 core patterns
+  const hasIch = /\bich\b/i.test(t);
+  const hasDu = /\bdu\b/i.test(t);
+  const hasWir = /\bwir\b/i.test(t);
+  const hasBin = /\bbin\b/i.test(textLow);
+  const hasBist = /\bbist\b/i.test(textLow);
+  const hasSind = /\bsind\b/i.test(textLow);
+
+  // Common A1: "Ich bin ..." / "Du bist ..." / "Wir sind ..."
+  if ((hasIch && !hasBin && /\bich\b/i.test(t)) && /\bsein\b/i.test(textLow) === false && /\bbin\b/i.test(textLow) === false) {
+    // no direct issue; allow other verbs
+  }
+
+  // Detect common wrong article usage: "Ich habe der Apfel." etc.
+  // Heuristic: after "habe" / "hast" / "haben" expect Akkusativ article (den/die/das/einen/eine).
+  const haveMatch = textLow.match(/\b(ich|du|wir|sie|er|ihr)\s+(habe|hast|haben|hat)\b/);
+  if (haveMatch) {
+    const after = textLow.split(haveMatch[0])[1] || "";
+    const hasWrongNomArticle = /\b(der|die|das)\b/.test(after);
+    const hasAccArticle = /\b(den|die|das|einen|eine)\b/.test(after);
+    if (hasWrongNomArticle && !hasAccArticle) {
+      issues.push({
+        type: "artikel",
+        severity: "warn",
+        code: "AKK_NACH_HABEN",
+        message: "Nach „haben“ oft Akkusativ: den/die/das oder einen/eine.",
+      });
+    }
+  }
+
+  // Specific word article correctness if noun present with wrong article
+  for (const v of vocabIndex) {
+    if (!v.article) continue;
+    const noun = v.bareLow;
+    if (!noun) continue;
+
+    // If noun occurs, check nearby "der/die/das" before noun
+    const pattern = new RegExp(`\\b(der|die|das)\\s+${escapeRegExp(noun)}\\b`, "i");
+    const m = textLow.match(pattern);
+    if (m) {
+      const used = m[1].toLowerCase();
+      if (used !== v.article) {
+        issues.push({
+          type: "artikel",
+          severity: "error",
+          code: "ARTIKEL_FALSCH",
+          message: `Artikel passt nicht: ${used} ${stripArticle(v.de)} → richtig: ${v.article} ${stripArticle(v.de)}.`,
+          fix: (s) => s.replace(new RegExp(`\\b${used}\\s+${escapeRegExp(stripArticle(v.de))}\\b`, "i"), `${v.article} ${stripArticle(v.de)}`),
+        });
+      }
+    }
+  }
+
+  // Word order hint: verb in position 2 for simple main clauses
+  // If sentence starts with "Heute" or time adverb, ensure second token is verb (very heuristic)
+  if (/^\s*(heute|morgen|jetzt)\b/i.test(t)) {
+    const tokens = t.split(/\s+/).filter(Boolean);
+    if (tokens.length >= 3) {
+      // naive: token[1] should often be verb
+      const second = toLowerDe(tokens[1]);
+      const isLikelyVerb = /(bin|bist|ist|sind|seid|haben|habe|hast|hat|gehen|gehe|gehst|geht|lernen|lerne|lernst|lernt|kaufen|kaufe|kaufst|kauft)/.test(
+        second
+      );
+      if (!isLikelyVerb) {
+        issues.push({
+          type: "wortstellung",
+          severity: "warn",
+          code: "VERB_ZWEIT",
+          message: "Im Hauptsatz steht das Verb oft an Position 2.",
+        });
+      }
+    }
+  }
+
+  // Detect missing punctuation (A1): encourage a dot.
+  if (t && !/[.!?]$/.test(t)) {
+    issues.push({
+      type: "satzzeichen",
+      severity: "warn",
+      code: "PUNKT",
+      message: "Am Ende: Punkt, Fragezeichen oder Ausrufezeichen.",
+      fix: (s) => s + ".",
+    });
+  }
+
+  // Detect too-long sentence for A1 training
+  const wordCount = t ? t.split(/\s+/).filter(Boolean).length : 0;
+  if (wordCount > 12) {
+    issues.push({
+      type: "niveau",
+      severity: "warn",
+      code: "A1_KURZ",
+      message: "A1: kurze Sätze (ca. 6–12 Wörter) sind leichter.",
+    });
+  }
+
+  // Minimal empty detection
+  if (!t) {
+    issues.push({
+      type: "leer",
+      severity: "error",
+      code: "LEER",
+      message: "Bitte einen Satz schreiben.",
+    });
+  }
+
+  const severity = issues.some((i) => i.severity === "error") ? "error" : issues.length ? "warn" : "ok";
+
+  // Build correction proposal
+  let correction = t;
+  for (const issue of issues) {
+    if (typeof issue.fix === "function") {
+      correction = issue.fix(correction);
+    }
+  }
+  correction = normalize(correction);
+
+  // Example generation (A1)
+  const example = buildA1Example(detectedWords, words);
+
+  // Hint (stepwise)
+  const hint = buildHint(issues, detectedWords);
+
+  // Explanation behavior
+  const explanation = buildExplanation(issues);
+
+  return {
+    input: t,
+    detectedWords,
+    issues,
+    severity,
+    correction: correction && correction !== t ? correction : null,
+    example,
+    hint,
+    explanation,
+  };
+}
+
+function teacherRespond(analysis, mode) {
+  const { severity, issues, correction, example, hint, explanation, input } = analysis;
+
+  if (mode === "beispiele") {
+    const ex = example || "Ich lerne Deutsch.";
+    return {
+      title: severity === "error" ? "Beispiel" : "Beispiel",
+      tone: "A1",
+      message: `Hier ist ein kurzes Beispiel:`,
+      example: ex,
+      listenText: ex,
+      speak: ex,
+    };
+  }
+
+  if (mode === "hinweis") {
+    if (!input) {
+      return {
+        title: "Hinweis",
+        tone: "Start",
+        message: "Schreibe einen einfachen Satz, z.B. „Ich bin müde.“ oder „Ich habe das Brot.“",
+        hint: "Tipp: Subjekt + Verb + Objekt.",
+        listenText: "Ich habe das Brot.",
+        speak: "Ich habe das Brot.",
+      };
+    }
+    const h = hint || "Tipp: Verb an Position 2.";
+    return {
+      title: "Hinweis",
+      tone: severity === "error" ? "streng" : "freundlich",
+      message: "Ich gebe dir einen Hinweis, ohne alles zu verraten:",
+      hint: h,
+      example: example || "Ich habe das Wasser.",
+      listenText: h,
+      speak: null,
+    };
+  }
+
+  // korrektur
+  if (!input) {
+    return {
+      title: "Korrektur",
+      tone: "Start",
+      message: "Schreibe einen Satz, dann korrigiere ich ihn.",
+      correction: null,
+      explanation: null,
+      hint: "Beispiel: „Ich habe den Apfel.“",
+      example: "Ich habe den Apfel.",
+      listenText: "Ich habe den Apfel.",
+      speak: null,
+    };
+  }
+
+  if (severity === "ok") {
+    return {
+      title: "Sehr gut",
+      tone: "positiv",
+      message: "Der Satz ist gut. Weiter so.",
+      correction: null,
+      explanation: "Keine Fehler erkannt.",
+      hint: "Tipp: Variiere mit „Heute“, „Jetzt“, „Morgen“.",
+      example: example || "Heute lerne ich Deutsch.",
+      listenText: input,
+      speak: input,
+    };
+  }
+
+  const topIssue = issues[0];
+  const title = severity === "error" ? "Korrektur" : "Fast richtig";
+  const tone = severity === "error" ? "streng" : "freundlich";
+
+  return {
+    title,
+    tone,
+    message:
+      severity === "error"
+        ? `Ich sehe einen wichtigen Fehler: ${topIssue.message}`
+        : `Ich sehe eine kleine Sache: ${topIssue.message}`,
+    correction: correction || input,
+    explanation: explanation || "Regel: kurz und klar.",
+    hint: hint || "Tipp: Artikel prüfen.",
+    example: example || "Ich habe das Brot.",
+    listenText: correction || input,
+    speak: correction || input,
+  };
+}
+
+function buildA1Example(detectedWords, allWords) {
+  const pick = (arr) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+  const w = pick(detectedWords) || pick(allWords);
+  if (!w) return "Ich lerne Deutsch.";
+
+  const article = parseArticle(w.de);
+  const noun = stripArticle(w.de);
+
+  const isVerbPhrase = !article && /\b(ich|du|wir|sie|er|ihr)\b/i.test(w.de);
+
+  if (isVerbPhrase) {
+    return `${capitalizeFirst(w.de)}.`;
+  }
+
+  if (article) {
+    const bare = noun;
+    if (article === "der") return `Ich habe den ${bare}.`;
+    if (article === "die") return `Ich habe die ${bare}.`;
+    if (article === "das") return `Ich habe das ${bare}.`;
+  }
+
+  return `Ich lerne ${w.de}.`;
+}
+
+function buildHint(issues, detectedWords) {
+  if (!issues.length) {
+    if (detectedWords.length) {
+      const w = detectedWords[0];
+      const art = parseArticle(w.de);
+      const noun = stripArticle(w.de);
+      if (art) return `Tipp: Der Artikel ist „${art}“ bei „${noun}“.`;
+    }
+    return "Tipp: Subjekt + Verb + Objekt.";
+  }
+
+  const codes = issues.map((i) => i.code);
+  if (codes.includes("ARTIKEL_FALSCH")) return "Tipp: Prüfe den Artikel (der/die/das) beim Nomen.";
+  if (codes.includes("AKK_NACH_HABEN")) return "Tipp: Nach „haben“ oft Akkusativ: den/die/das (oder einen/eine).";
+  if (codes.includes("VERB_ZWEIT")) return "Tipp: Im Hauptsatz steht das Verb oft an Position 2.";
+  if (codes.includes("PUNKT")) return "Tipp: Setze am Ende einen Punkt.";
+  if (codes.includes("A1_KURZ")) return "Tipp: Mach den Satz kürzer (A1).";
+  if (codes.includes("LEER")) return "Tipp: Schreibe einen Satz, z.B. „Ich habe das Wasser.“";
+  return "Tipp: Einfacher Satz: Subjekt + Verb + Objekt.";
+}
+
+function buildExplanation(issues) {
+  if (!issues.length) return "Keine Fehler erkannt.";
+  const parts = [];
+  const uniq = new Set();
+  for (const i of issues) {
+    if (uniq.has(i.code)) continue;
+    uniq.add(i.code);
+    if (i.code === "AKK_NACH_HABEN") parts.push("Nach „haben“ benutzt man oft Akkusativ (den/die/das).");
+    else if (i.code === "ARTIKEL_FALSCH") parts.push("Artikel gehören zum Nomen und müssen passen (der/die/das).");
+    else if (i.code === "VERB_ZWEIT") parts.push("Im Hauptsatz steht das Verb oft an zweiter Stelle.");
+    else if (i.code === "PUNKT") parts.push("Satzzeichen am Ende machen den Satz klar.");
+    else if (i.code === "A1_KURZ") parts.push("Kurze Sätze sind auf A1 leichter.");
+    else if (i.code === "LEER") parts.push("Ohne Satz kann ich nichts korrigieren.");
+    else parts.push(i.message);
+  }
+  return parts.join(" ");
+}
+
+function escapeRegExp(s) {
+  return (s ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function capitalizeFirst(s) {
+  const t = normalize(s);
+  if (!t) return t;
+  return t[0].toLocaleUpperCase("de-DE") + t.slice(1);
 }
 
 export default App;
