@@ -1,34 +1,17 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deutsch mit Moaz Ali DKW</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --duo-green: #58cc02; --duo-blue: #1cb0f6; --duo-gray: #afafaf; }
-        body { font-family: sans-serif; background-color: #ffffff; margin: 0; padding: 20px; display: flex; justify-content: center; text-align: center; }
-        .container { max-width: 500px; width: 100%; }
-        .header { color: var(--duo-green); font-size: 28px; font-weight: 900; margin-bottom: 5px; }
-        .sub-header { color: #4b4b4b; font-size: 18px; margin-bottom: 30px; font-weight: bold; }
-        
-        /* Progress Bar */
-        .progress-container { background: #e5e5e5; height: 16px; border-radius: 20px; margin-bottom: 30px; overflow: hidden; }
-        .progress-bar { background: var(--duo-green); height: 100%; transition: width 0.5s ease; border-radius: 20px; }
-
-        /* Input Area */
-        textarea { width: 100%; height: 100px; border: 2px solid #e5e5e5; border-radius: 15px; padding: 15px; font-size: 16px; box-sizing: border-box; outline: none; }
-        .btn-load { background: var(--duo-green); color: white; border: none; border-radius: 15px; padding: 15px; width: 100%; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 10px; border-bottom: 4px solid #46a302; }
-        .btn-load:active { border-bottom: none; transform: translateY(4px); }
-
-        /* Quiz Section */
-        .quiz-card { margin-top: 40px; padding: 20px; border: 2px solid #e5e5e5; border-radius: 20px; }
-        .sound-btn { background: var(--duo-blue); width: 80px; height: 80px; border-radius: 15px; border: none; border-bottom: 4px solid #1899d6; color: white; font-size: 40px; cursor: pointer; margin-bottom: 20px; }
-        .option-btn { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #e5e5e5; border-radius: 15px; background: white; font-size: 18px; font-weight: bold; color: #4b4b4b; cursor: pointer; border-bottom: 4px solid #e5e5e5; }
-        .option-btn:hover { background-color: #f7f7f7; }
-        .option-btn:active { border-bottom: none; transform: translateY(4px); }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #f0f2f5; }
+        .page { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -37,71 +20,60 @@
         const { useState } = React;
 
         function App() {
-            const [input, setInput] = useState("");
+            const [page, setPage] = useState('home'); // home, add, learn, quiz
             const [words, setWords] = useState([]);
-            const [quiz, setQuiz] = useState(null);
-            const [progress, setProgress] = useState(10);
+            const [input, setInput] = useState("");
 
-            const speak = (text) => {
-                const msg = new SpeechSynthesisUtterance(text);
-                msg.lang = 'de-DE';
-                window.speechSynthesis.speak(msg);
-            };
-
-            const start = () => {
-                const lines = input.split('\n').filter(l => l.includes('-'));
-                const parsed = lines.map(l => {
-                    const [de, ar] = l.split('-').map(s => s.trim());
-                    return { de, ar };
-                });
-                if(parsed.length < 2) return alert("اكتب كلمتين على الأقل!");
-                setWords(parsed);
-                makeQuiz(parsed);
-            };
-
-            const makeQuiz = (list) => {
-                const correct = list[Math.floor(Math.random() * list.length)];
-                let options = [correct.ar];
-                while(options.length < 3 && options.length < list.length) {
-                    const r = list[Math.floor(Math.random() * list.length)].ar;
-                    if(!options.includes(r)) options.push(r);
-                }
-                setQuiz({ correct, options: options.sort(() => Math.random() - 0.5) });
-                speak(correct.de);
-            };
-
-            const check = (ans) => {
-                if(ans === quiz.correct.ar) {
-                    setProgress(p => Math.min(p + 20, 100));
-                    makeQuiz(words);
-                } else {
-                    alert("خطأ! حاول تاني");
-                }
+            const handleLoad = () => {
+                const p = input.split('\n').filter(l => l.includes('-')).map(l => ({de: l.split('-')[0].trim(), ar: l.split('-')[1].trim()}));
+                setWords(p);
+                setPage('home');
             };
 
             return (
-                <div className="container">
-                    <div className="header">DEUTSCH MIT MOAZ</div>
-                    <div className="sub-header">ALI DKW</div>
-                    
-                    <div className="progress-container">
-                        <div className="progress-bar" style={{width: progress + '%'}}></div>
-                    </div>
+                <div className="min-h-screen pb-24">
+                    {/* الخانات (Navigation) */}
+                    <nav className="fixed bottom-0 w-full bg-white border-t-2 border-gray-200 flex justify-around p-4 z-50">
+                        <button onClick={() => setPage('home')} className="font-bold text-gray-500">🏠 الرئيسية</button>
+                        <button onClick={() => setPage('add')} className="font-bold text-gray-500">➕ إضافة</button>
+                        <button onClick={() => setPage('learn')} className="font-bold text-gray-500">📖 تعلم</button>
+                        <button onClick={() => setPage('quiz')} className="font-bold text-gray-500">🏆 تحدي</button>
+                    </nav>
 
-                    {!quiz ? (
-                        <div>
-                            <textarea placeholder="اكتب هنا: Hallo - مرحبا" value={input} onChange={e => setInput(e.target.value)} />
-                            <button className="btn-load" onClick={start}>ابدأ التحدي 🚀</button>
-                        </div>
-                    ) : (
-                        <div className="quiz-card">
-                            <button className="sound-btn" onClick={() => speak(quiz.correct.de)}>🔊</button>
-                            <div style={{fontSize: '24px', fontWeight: '900', marginBottom: '20px'}}>{quiz.correct.de}</div>
-                            {quiz.options.map((o, i) => (
-                                <button key={i} className="option-btn" onClick={() => check(o)}>{o}</button>
-                            ))}
-                        </div>
-                    )}
+                    <div className="p-6">
+                        {page === 'home' && (
+                            <div className="page text-center mt-20">
+                                <h1 className="text-4xl font-black text-green-600">Deutsch mit Moaz Ali DKW</h1>
+                                <p className="text-gray-500 mt-4">مرحباً بك في منصتك الخاصة للتعلم</p>
+                            </div>
+                        )}
+
+                        {page === 'add' && (
+                            <div className="page bg-white p-6 rounded-2xl shadow">
+                                <h2 className="text-2xl font-bold mb-4">أضف كلماتك</h2>
+                                <textarea className="w-full h-64 border-2 p-4 rounded-xl" placeholder="كلمة - ترجمة" value={input} onChange={e => setInput(e.target.value)} />
+                                <button onClick={handleLoad} className="w-full bg-green-600 text-white p-4 rounded-xl font-bold mt-4">حفظ القاموس</button>
+                            </div>
+                        )}
+
+                        {page === 'learn' && (
+                            <div className="page text-center">
+                                {words.length > 0 ? words.map((w, i) => (
+                                    <div key={i} className="bg-white p-8 rounded-2xl shadow mb-4">
+                                        <h2 className="text-3xl font-bold">{w.de}</h2>
+                                        <p className="text-gray-400 mt-2">{w.ar}</p>
+                                    </div>
+                                )) : <p>لا توجد كلمات، أضفها أولاً!</p>}
+                            </div>
+                        )}
+
+                        {page === 'quiz' && (
+                            <div className="page text-center">
+                                <h2 className="text-2xl font-bold mb-6">اختبار الذكاء</h2>
+                                {words.length > 0 ? <p className="text-green-600 font-bold">جاري تشغيل الاختبار لنظام {words.length} كلمة...</p> : <p>أضف كلمات أولاً!</p>}
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }
